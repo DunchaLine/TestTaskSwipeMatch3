@@ -57,20 +57,41 @@ namespace SwipeMatch3.ObjectPoolingBackground
             protected override void Reinitialize(RectTransform rect, BackgroundObject item)
             {
                 item.SetParent(rect);
-                item.transform.localPosition = GetRandomPosition(rect);
+                item.transform.localPosition = GetRandomPosition(rect, out bool isLeft);
+                item.SetBehaviour(GetDestinationPoint(rect, isLeft));
             }
 
             /// <summary>
-            /// Получение случайной позиции на в пределах rect
+            /// Получение случайной позиции в пределах верхней половины Rect для y
+            /// и левой, либо правой позиции для x
             /// </summary>
             /// <param name="rect"></param>
             /// <returns></returns>
-            private Vector3 GetRandomPosition(RectTransform rect)
+            private Vector3 GetRandomPosition(RectTransform rect, out bool isLeft)
             {
-                float x = Random.Range(-rect.rect.width / 2, rect.rect.width / 2);
-                float y = Random.Range(-rect.rect.height / 2, rect.rect.height / 2);
+                int random = Random.Range(0, 2);
+                float y = Random.Range(0f, rect.rect.height / 2);
+                int xNat = random == 0 ? -1 : 1;
 
-                return new Vector3(x, y, -1f);
+                isLeft = xNat == -1;
+
+                return new Vector3(rect.rect.width / 2 * xNat, y, -1f);
+            }
+
+            /// <summary>
+            /// Получение конечной точки по rect в зависимости от isLeft
+            /// </summary>
+            /// <param name="rect"></param>
+            /// <param name="isLeft"></param>
+            /// <returns></returns>
+            private Vector2 GetDestinationPoint(RectTransform rect, bool isLeft)
+            {
+                float y = Random.Range(0f, rect.rect.height / 2);
+                float x = rect.rect.width / 2;
+                if (isLeft == false)
+                    x *= -1;
+
+                return new Vector2(x, y);
             }
 
             /// <summary>

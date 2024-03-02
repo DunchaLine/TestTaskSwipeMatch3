@@ -13,9 +13,7 @@ namespace SwipeMatch3.ObjectPoolingBackground
 
         private bool IsInit { get; set; } = false;
 
-        protected abstract void OnEnable();
-
-        protected abstract void OnDisable();
+        public abstract void SetBehaviour(Vector2 destinationPoint);
 
         public void SetParent(RectTransform rect)
         {
