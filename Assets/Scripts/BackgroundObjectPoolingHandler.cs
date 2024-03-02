@@ -7,12 +7,8 @@ using Zenject;
 
 namespace SwipeMatch3.Gameplay
 {
-    public class GameplayBackgroundHandler : MonoBehaviour
+    public class BackgroundObjectPoolingHandler : MonoBehaviour
     {
-        /*public UnityEvent OnEnableObjectInPool;
-
-        public UnityEvent OnDisableObjectInPool;*/
-
         [SerializeField]
         private RectTransform _backgroundObjectCanvasRect;
 

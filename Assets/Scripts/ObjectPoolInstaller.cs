@@ -4,7 +4,7 @@ using Zenject;
 
 namespace SwipeMatch3.Gameplay
 {
-    public class GameInstaller : MonoInstaller
+    public class ObjectPoolInstaller : MonoInstaller
     {
         [SerializeField]
         private BackgroundObject poolObjectPrefab;
