@@ -1,8 +1,12 @@
+using SwipeMatch3.Gameplay.Settings;
 using System.Collections.Generic;
 using UnityEngine;
 
 namespace SwipeMatch3.Gameplay
 {
+    /// <summary>
+    /// Абстрактный класс играбельной доски
+    /// </summary>
     public abstract class BoardAbstract : MonoBehaviour
     {
         [SerializeField]
@@ -18,7 +22,7 @@ namespace SwipeMatch3.Gameplay
                 RowAbstract newRow = container.InstantiatePrefabForComponent<RowAbstract>(row, transform);
                 if (newRow == null)
                     continue;
-                newRow.Init(i, _boardSettings.Rows[i].SpritesInRow);
+                newRow.Init(i, _boardSettings.Rows[i].TilesInRow);
                 Rows.Add(newRow);
             }
         }

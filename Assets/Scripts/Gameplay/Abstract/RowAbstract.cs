@@ -1,3 +1,4 @@
+using SwipeMatch3.Gameplay.Settings;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -5,6 +6,9 @@ using Zenject;
 
 namespace SwipeMatch3.Gameplay
 {
+    /// <summary>
+    /// Абстрактный класс строки со списком тайлов
+    /// </summary>
     public abstract class RowAbstract : MonoBehaviour
     {
         public List<TileAbstract> Tiles { get; private set; } = new List<TileAbstract>();
@@ -22,26 +26,26 @@ namespace SwipeMatch3.Gameplay
             _container = container;
         }
         
-        public void Init(int indexInBoard, Sprite[] spritesInRow)
+        public void Init(int indexInBoard, TileSetting[] tilesInRow)
         {
             if (Tile == null)
                 return;
 
             IndexInBoard = indexInBoard;
-            for (int i = 0; i < spritesInRow.Length; i++)
+            for (int i = 0; i < tilesInRow.Length; i++)
             {
                 TileAbstract newTile = _container.InstantiatePrefabForComponent<TileAbstract>(Tile, transform);
                 if (newTile == null)
                     continue;
 
-                newTile.Init(i, spritesInRow[i]);
+                newTile.Init(i, tilesInRow[i]);
                 Tiles.Add(newTile);
             }
         }
 
-        public abstract Tile GetLeftTile();
+        public abstract MovableTile GetLeftTile();
 
-        public abstract Tile GetRightTile();
+        public abstract MovableTile GetRightTile();
 
     }
 }

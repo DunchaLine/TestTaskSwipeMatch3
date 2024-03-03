@@ -6,12 +6,12 @@ namespace SwipeMatch3.Gameplay
 {
     public class Row : RowAbstract
     {
-        public override Tile GetLeftTile()
+        public override MovableTile GetLeftTile()
         {
             throw new System.NotImplementedException();
         }
 
-        public override Tile GetRightTile()
+        public override MovableTile GetRightTile()
         {
             throw new System.NotImplementedException();
         }

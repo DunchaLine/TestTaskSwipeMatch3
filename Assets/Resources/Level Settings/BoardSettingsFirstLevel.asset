@@ -13,15 +13,17 @@ MonoBehaviour:
   m_Name: BoardSettingsFirstLevel
   m_EditorClassIdentifier: 
   <Rows>k__BackingField:
-  - SpritesInRow:
-    - {fileID: 21300000, guid: 462bdc25c537c1f48b264e70ba77dc72, type: 3}
+  - TilesInRow:
     - {fileID: 0}
-    - {fileID: 21300000, guid: 462bdc25c537c1f48b264e70ba77dc72, type: 3}
-    - {fileID: 21300000, guid: 54d89bf9faf24d44fb34c085e5dd8687, type: 3}
-    - {fileID: 21300000, guid: 54d89bf9faf24d44fb34c085e5dd8687, type: 3}
-  - SpritesInRow:
-    - {fileID: 21300000, guid: 462bdc25c537c1f48b264e70ba77dc72, type: 3}
     - {fileID: 0}
-    - {fileID: 21300000, guid: 54d89bf9faf24d44fb34c085e5dd8687, type: 3}
+    - {fileID: 0}
+    - {fileID: 0}
+    - {fileID: 0}
+    - {fileID: 0}
+  - TilesInRow:
+    - {fileID: 0}
+    - {fileID: 0}
+    - {fileID: 0}
+    - {fileID: 0}
     - {fileID: 0}
     - {fileID: 0}

@@ -1,8 +1,12 @@
+using SwipeMatch3.Gameplay.Settings;
 using UnityEngine;
 using UnityEngine.UI;
 
 namespace SwipeMatch3.Gameplay
 {
+    /// <summary>
+    /// Абстрактный класс тайла
+    /// </summary>
     [RequireComponent(typeof(SpriteRenderer), typeof(Image))]
     public abstract class TileAbstract : MonoBehaviour
     {
@@ -14,27 +18,36 @@ namespace SwipeMatch3.Gameplay
 
         public int IndexInRow { get; private set; }
 
-        public void Init(int index, Sprite sprite)
+        public Color Color => color;
+
+        public TileSetting TileSetting { get; protected set; }
+
+        protected Color color;
+
+        public void Init(int index, TileSetting tileSetting)
         {
             Image = GetComponent<Image>();
             SpriteRenderer = GetComponent<SpriteRenderer>();
-            if (sprite != null)
+            if (tileSetting == null)
+                tileSetting = (TileSetting) ScriptableObject.CreateInstance(typeof(TileSetting));
+            TileSetting = tileSetting;
+            color = Image.color;
+
+            if (tileSetting.Sprite != null && tileSetting.Visible)
             {
-                Image.sprite = sprite;
-                SpriteRenderer.sprite = sprite;
+                Image.sprite = tileSetting.Sprite;
+                SpriteRenderer.sprite = tileSetting.Sprite;
             }
             else
             {
-                Color color = Image.color;
                 color.a = 0f;
+
                 Image.color = color;
                 SpriteRenderer.color = color;
             }
 
             IndexInRow = index;
         }
-
-        public abstract void SwitchSprite(Sprite sprite);
 
         public abstract void Interact();
     }
