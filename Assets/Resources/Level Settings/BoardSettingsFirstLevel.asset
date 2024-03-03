@@ -14,16 +14,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   <Rows>k__BackingField:
   - TilesInRow:
-    - {fileID: 0}
-    - {fileID: 0}
-    - {fileID: 0}
-    - {fileID: 0}
-    - {fileID: 0}
-    - {fileID: 0}
+    - {fileID: 11400000, guid: 347d1f1b2c51ca34bb88e2f1a80aa0e4, type: 2}
+    - {fileID: 11400000, guid: 11d7519e962537640a84932567dac41d, type: 2}
+    - {fileID: 11400000, guid: 347d1f1b2c51ca34bb88e2f1a80aa0e4, type: 2}
+    - {fileID: 11400000, guid: af8ec3b66f8283c41a65d840485e9014, type: 2}
+    - {fileID: 11400000, guid: af8ec3b66f8283c41a65d840485e9014, type: 2}
   - TilesInRow:
-    - {fileID: 0}
-    - {fileID: 0}
-    - {fileID: 0}
-    - {fileID: 0}
+    - {fileID: 11400000, guid: 347d1f1b2c51ca34bb88e2f1a80aa0e4, type: 2}
+    - {fileID: 11400000, guid: 11d7519e962537640a84932567dac41d, type: 2}
+    - {fileID: 11400000, guid: af8ec3b66f8283c41a65d840485e9014, type: 2}
     - {fileID: 0}
     - {fileID: 0}
