@@ -5,7 +5,7 @@ using UnityEngine;
 namespace SwipeMatch3.Gameplay
 {
     /// <summary>
-    /// Абстрактный класс играбельной доски
+    /// РђР±СЃС‚СЂР°РєС‚РЅС‹Р№ РєР»Р°СЃСЃ РёРіСЂР°Р±РµР»СЊРЅРѕР№ РґРѕСЃРєРё
     /// </summary>
     public abstract class BoardAbstract : MonoBehaviour
     {

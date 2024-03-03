@@ -7,7 +7,7 @@ using Zenject;
 namespace SwipeMatch3.Gameplay
 {
     /// <summary>
-    /// Абстрактный класс строки со списком тайлов
+    /// РђР±СЃС‚СЂР°РєС‚РЅС‹Р№ РєР»Р°СЃСЃ СЃС‚СЂРѕРєРё СЃРѕ СЃРїРёСЃРєРѕРј С‚Р°Р№Р»РѕРІ
     /// </summary>
     public abstract class RowAbstract : MonoBehaviour
     {

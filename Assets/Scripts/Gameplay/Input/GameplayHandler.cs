@@ -5,7 +5,7 @@ namespace SwipeMatch3.Gameplay
 {
     public class GameplayHandler : MonoBehaviour
     {
-        // добавить проверочные методы на возможность смены спрайтов только у соседних объектов
+        // РґРѕР±Р°РІРёС‚СЊ РїСЂРѕРІРµСЂРѕС‡РЅС‹Рµ РјРµС‚РѕРґС‹ РЅР° РІРѕР·РјРѕР¶РЅРѕСЃС‚СЊ СЃРјРµРЅС‹ СЃРїСЂР°Р№С‚РѕРІ С‚РѕР»СЊРєРѕ Сѓ СЃРѕСЃРµРґРЅРёС… РѕР±СЉРµРєС‚РѕРІ
 
         public void SwapSprites(ITileMovable first, ITileMovable second)
         {
