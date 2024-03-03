@@ -220,8 +220,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6973ab6c29db26943b9425b831c867a6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _tilePrefab: {fileID: 6522236930037473114, guid: 954f4e2d8ed50f743a760729755545d0, type: 3}
-  _rowPrefab: {fileID: 4198737731488842241, guid: 9e0484b307d419c46a92e48fd9a911d4, type: 3}
+  _tilePrefab: {fileID: 4019725325449808795, guid: 954f4e2d8ed50f743a760729755545d0, type: 3}
+  _rowPrefab: {fileID: 1065378042006073746, guid: 9e0484b307d419c46a92e48fd9a911d4, type: 3}
 --- !u!4 &91993666
 Transform:
   m_ObjectHideFlags: 0
@@ -865,6 +865,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 1095552625}
     m_Modifications:
+    - target: {fileID: -1327823164457195272, guid: 688a59c0f11b19643ba4a88352522c98, type: 3}
+      propertyPath: _boardSettings
+      value: 
+      objectReference: {fileID: 11400000, guid: f49c188364853ec47b9b7e76bd9c40ad, type: 2}
     - target: {fileID: 6804262604292625687, guid: 688a59c0f11b19643ba4a88352522c98, type: 3}
       propertyPath: m_Name
       value: Board

@@ -5,21 +5,20 @@ namespace SwipeMatch3.Gameplay
 {
     public abstract class BoardAbstract : MonoBehaviour
     {
-        [field: SerializeField, Range(6, 10)]
-        public int RowsLimit { get; private set; } = 6;
-
-        [field: SerializeField, Range(3, 6)]
-        public int TilesLimit { get; private set; } = 4;
+        [SerializeField]
+        private BoardSettings _boardSettings;
 
         public List<RowAbstract> Rows { get; private set; } = new List<RowAbstract>();
 
         [Zenject.Inject]
         private void Init(RowAbstract row, Zenject.DiContainer container)
         {
-            for (int i = 0; i < RowsLimit; i++)
+            for (int i = 0; i < _boardSettings.Rows.Length; i++)
             {
                 RowAbstract newRow = container.InstantiatePrefabForComponent<RowAbstract>(row, transform);
-                newRow.Init(i, TilesLimit);
+                if (newRow == null)
+                    continue;
+                newRow.Init(i, _boardSettings.Rows[i].SpritesInRow);
                 Rows.Add(newRow);
             }
         }

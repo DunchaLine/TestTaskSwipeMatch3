@@ -14,10 +14,23 @@ namespace SwipeMatch3.Gameplay
 
         public int IndexInRow { get; private set; }
 
-        public void Init(int index)
+        public void Init(int index, Sprite sprite)
         {
             Image = GetComponent<Image>();
             SpriteRenderer = GetComponent<SpriteRenderer>();
+            if (sprite != null)
+            {
+                Image.sprite = sprite;
+                SpriteRenderer.sprite = sprite;
+            }
+            else
+            {
+                Color color = Image.color;
+                color.a = 0f;
+                Image.color = color;
+                SpriteRenderer.color = color;
+            }
+
             IndexInRow = index;
         }
 

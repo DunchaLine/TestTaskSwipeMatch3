@@ -15,6 +15,8 @@ namespace SwipeMatch3.Gameplay.Installers
         {
             Container.BindInterfacesAndSelfTo<TileAbstract>().FromInstance(_tilePrefab).AsSingle();
             Container.BindInterfacesAndSelfTo<RowAbstract>().FromInstance(_rowPrefab).AsSingle();
+
+            Container.BindInterfacesAndSelfTo<BoardAbstract>().FromComponentsInHierarchy().AsSingle().Lazy();
         }
     }
 }

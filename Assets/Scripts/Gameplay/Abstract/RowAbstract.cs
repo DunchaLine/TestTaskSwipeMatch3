@@ -22,16 +22,19 @@ namespace SwipeMatch3.Gameplay
             _container = container;
         }
         
-        public void Init(int indexInBoard, int tilesCount)
+        public void Init(int indexInBoard, Sprite[] spritesInRow)
         {
             if (Tile == null)
                 return;
 
             IndexInBoard = indexInBoard;
-            for (int i = 0; i < tilesCount; i++)
+            for (int i = 0; i < spritesInRow.Length; i++)
             {
                 TileAbstract newTile = _container.InstantiatePrefabForComponent<TileAbstract>(Tile, transform);
-                newTile.Init(i);
+                if (newTile == null)
+                    continue;
+
+                newTile.Init(i, spritesInRow[i]);
                 Tiles.Add(newTile);
             }
         }
