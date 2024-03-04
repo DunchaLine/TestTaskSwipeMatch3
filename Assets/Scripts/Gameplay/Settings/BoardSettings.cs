@@ -17,5 +17,13 @@ namespace SwipeMatch3.Gameplay.Settings
         {
             public TileSetting[] TilesInRow;
         }
+
+        public bool IsCorrect()
+        {
+            if (Rows == null || Rows.Length == 0)
+                return false;
+
+            return true;
+        }
     }
 }
