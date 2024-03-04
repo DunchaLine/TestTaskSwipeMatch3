@@ -19,7 +19,7 @@ namespace SwipeMatch3.Gameplay
         [Zenject.Inject]
         private void Init(RowAbstract row, Zenject.DiContainer container)
         {
-            if (IsCorrectSettings() == false)
+            if (_boardSettings == null || _boardSettings.IsCorrect() == false)
             {
                 Debug.LogError($"Board: {name} has incorrect settings: {_boardSettings.name}");
                 return;
@@ -33,25 +33,6 @@ namespace SwipeMatch3.Gameplay
                 newRow.Init(i, _boardSettings.Rows[i].TilesInRow);
                 Rows.Add(newRow);
             }
-        }
-
-        private bool IsCorrectSettings()
-        {
-            if (_boardSettings == null || _boardSettings.IsCorrect() == false)
-                return false;
-
-            var rowsInSettings = _boardSettings.Rows;
-            if (rowsInSettings.Length == 1)
-                return true;
-
-            int firstRowTileCount = rowsInSettings[0].TilesInRow.Length;
-            for (int i = 1; i < rowsInSettings.Length; i++)
-            {
-                if (firstRowTileCount != rowsInSettings[i].TilesInRow.Length)
-                    return false;
-            }
-
-            return true;
         }
 
         public void SetBoardActive()

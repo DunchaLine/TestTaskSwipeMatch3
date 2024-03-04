@@ -23,6 +23,16 @@ namespace SwipeMatch3.Gameplay.Settings
             if (Rows == null || Rows.Length == 0)
                 return false;
 
+            if (Rows.Length > 1)
+            {
+                int firstRowTileCount = Rows[0].TilesInRow.Length;
+                for (int i = 1; i < Rows.Length; i++)
+                {
+                    if (firstRowTileCount != Rows[i].TilesInRow.Length)
+                        return false;
+                }
+            }
+
             return true;
         }
     }
