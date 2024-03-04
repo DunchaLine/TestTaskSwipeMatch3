@@ -1,5 +1,4 @@
 using UnityEngine;
-using static SwipeMatch3.Gameplay.BoardAbstract;
 
 namespace SwipeMatch3.Gameplay.Settings
 {

@@ -1,5 +1,7 @@
 using SwipeMatch3.Gameplay.Interfaces;
 
+using System.Collections.Generic;
+
 namespace SwipeMatch3.Gameplay.Signals
 {
     public class GameSignals
@@ -32,7 +34,12 @@ namespace SwipeMatch3.Gameplay.Signals
         /// </summary>
         public class NormalizeTilesOnBoardSignal
         {
-            
+            public readonly List<int> ColumnsIndexes;
+
+            public NormalizeTilesOnBoardSignal(List<int> columnsIndexes)
+            {
+                ColumnsIndexes = columnsIndexes;
+            }
         }
 
         /// <summary>

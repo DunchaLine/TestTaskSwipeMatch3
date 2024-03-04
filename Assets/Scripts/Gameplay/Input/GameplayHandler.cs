@@ -1,5 +1,6 @@
 using SwipeMatch3.Gameplay.Interfaces;
 using SwipeMatch3.Gameplay.Signals;
+
 using Zenject;
 
 namespace SwipeMatch3.Gameplay
@@ -19,8 +20,8 @@ namespace SwipeMatch3.Gameplay
 
         public void SwapSpritesUpToDown(GameSignals.SwapSpritesUpDownSignal swapUpDownSignal)
         {
-            var downElement = swapUpDownSignal.DownElement;
-            var upElement = swapUpDownSignal.UpElement;
+            ITileMovable downElement = swapUpDownSignal.DownElement;
+            ITileMovable upElement = swapUpDownSignal.UpElement;
 
             if (downElement == null || upElement == null)
                 return;
@@ -33,20 +34,19 @@ namespace SwipeMatch3.Gameplay
 
         public void SwapSprites(GameSignals.SwapSignal swapSignal)
         {
-            var first = swapSignal.FirstSwapElement;
-            var second = swapSignal.SecondSwapElement;
+            ITileMovable first = swapSignal.FirstSwapElement;
+            ITileMovable second = swapSignal.SecondSwapElement;
 
             if (IsCorrectSwap(first, second) == false)
                 return;
 
             Swap(first, second);
 
-            // отправлять сигнал только для тех столбцов, в которых произошли изменения
-            // как-то получить индексы стобцов, в которых произошли изменения и отправить их, 
-            // изменив NormalizeTilesOnBoardSignal, добавив в него List<int>. 
-            // в BoardsHandler.NormalizeTilesOnBoard тоже добавить List<int> и проходить не по всем
-            // а только по измененным
-            _signalBus.Fire<GameSignals.NormalizeTilesOnBoardSignal>();
+            int firstTileIndex = _boardsHandler.GetTileColumnIndex(first);
+            int secondTileIndex = _boardsHandler.GetTileColumnIndex(second);
+
+            _signalBus.Fire(new GameSignals.NormalizeTilesOnBoardSignal(
+                new System.Collections.Generic.List<int> { firstTileIndex, secondTileIndex }));
         }
 
         /// <summary>

@@ -1,6 +1,8 @@
 using SwipeMatch3.Gameplay.Interfaces;
 using SwipeMatch3.Gameplay.Settings;
+
 using System.Collections.Generic;
+
 using UnityEngine;
 
 using Zenject;
@@ -44,12 +46,27 @@ namespace SwipeMatch3.Gameplay
             }
         }
 
+        /// <summary>
+        /// Равен ли tile передаваемому tileMovable
+        /// </summary>
+        /// <param name="tile"></param>
+        /// <param name="tileMovable"></param>
+        /// <returns></returns>
+        private bool IsITileMovableEquals(TileAbstract tile, ITileMovable tileMovable)
+        {
+            return tile != null && tileMovable == tile as ITileMovable;
+        }
+
+        /// <summary>
+        /// Получение тайла по ITileMovable
+        /// </summary>
+        /// <param name="movableTile"></param>
+        /// <returns></returns>
         public TileAbstract GetTile(ITileMovable movableTile)
         {
             foreach (var tile in Tiles)
             {
-                var tileMovable = tile as ITileMovable;
-                if (tileMovable != null && movableTile == tileMovable)
+                if (IsITileMovableEquals(tile, movableTile))
                     return tile;
             }
 
@@ -62,10 +79,5 @@ namespace SwipeMatch3.Gameplay
                 return null;
             return Tiles[index];
         }
-
-        public abstract MovableTile GetLeftTile();
-
-        public abstract MovableTile GetRightTile();
-
     }
 }

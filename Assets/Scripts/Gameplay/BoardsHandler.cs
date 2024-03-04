@@ -1,13 +1,16 @@
-using Cysharp.Threading.Tasks;
+using static SwipeMatch3.Gameplay.BoardAbstract;
 using SwipeMatch3.Gameplay.Interfaces;
 using SwipeMatch3.Gameplay.Signals;
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+
 using UnityEngine;
+
 using Zenject;
-using static SwipeMatch3.Gameplay.BoardAbstract;
+using Cysharp.Threading.Tasks;
 
 namespace SwipeMatch3.Gameplay
 {
@@ -33,7 +36,6 @@ namespace SwipeMatch3.Gameplay
             _signalBus = signalBus;
             _signalBus.Subscribe<GameSignals.ChangeBoardSignal>(SetNextBoardActive);
             _signalBus.Subscribe<GameSignals.NormalizeTilesOnBoardSignal>(NormalizeTilesOnBoard);
-            //_signalBus.Subscribe<GameSignals.OnSwappedSpritesUpDownSignal>(OnChangesUpDownTiles);
 
             ActiveBoard = boards[0];
             Boards = boards;
@@ -46,7 +48,7 @@ namespace SwipeMatch3.Gameplay
             }
 
             // TODO: временно, перенести в UI, который будет запускать нормализацию по кнопке на старте игры
-            _signalBus.Fire<GameSignals.NormalizeTilesOnBoardSignal>();
+            //_signalBus.Fire<GameSignals.NormalizeTilesOnBoardSignal>();
         }
 
         /// <summary>
@@ -54,7 +56,7 @@ namespace SwipeMatch3.Gameplay
         /// </summary>
         /// <param name="columnIndex"></param>
         /// <returns></returns>
-        private List<TileInBoard> GetTilesInColumn(int columnIndex)
+        public List<TileInBoard> GetTilesInColumn(int columnIndex)
         {
             List<TileInBoard> tilesInBoard = new List<TileInBoard>();
             for (int x = 0; x < ActiveBoard.BoardHeight; x++)
@@ -63,25 +65,33 @@ namespace SwipeMatch3.Gameplay
             return tilesInBoard;
         }
 
+        public int GetTileColumnIndex(ITileMovable tileMovable)
+        {
+            return ActiveBoard.GetTileColumnIndex(tileMovable);
+        }
+
         /// <summary>
         /// Нормализация тайлов на board
         /// </summary>
-        private async void NormalizeTilesOnBoard()
+        private async void NormalizeTilesOnBoard(GameSignals.NormalizeTilesOnBoardSignal signal)
         {
             List<int> columnsToCheck = new List<int>();
-            for (int x = 0; x < ActiveBoard.BoardWidth; x++)
+            foreach (var columnIndex in signal.ColumnsIndexes)
             {
+                if (columnIndex < 0)
+                    continue;
+
                 // сохраняем список всех тайлов в одном столбце
-                List<TileInBoard> tilesInColumn = GetTilesInColumn(x);
+                List<TileInBoard> tilesInColumn = GetTilesInColumn(columnIndex);
 
                 // если в текущем столбце нет "висящих" тайлов => пропуск
                 if (IsTileColumnNeedToNormalize(tilesInColumn) == false)
                     continue;
 
                 // если этот столбец уже проверяется => пропуск
-                if (ColumnsChecking.Contains(x))
+                if (ColumnsChecking.Contains(columnIndex))
                     continue;
-                columnsToCheck.Add(x);
+                columnsToCheck.Add(columnIndex);
             }
 
             List<UniTask> tasks = new List<UniTask>();

@@ -1,9 +1,9 @@
-using Cysharp.Threading.Tasks;
 using SwipeMatch3.Gameplay.Interfaces;
 using SwipeMatch3.Gameplay.Settings;
+
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
+
 using Unity.Mathematics;
 using UnityEngine;
 
@@ -64,6 +64,9 @@ namespace SwipeMatch3.Gameplay
             SetTilesCoordinates();
         }
 
+        /// <summary>
+        /// Установка координат для каждого тайла
+        /// </summary>
         private void SetTilesCoordinates()
         {
             TilesInBoard = new TileInBoard[BoardHeight * BoardWidth];
@@ -79,18 +82,31 @@ namespace SwipeMatch3.Gameplay
             }
         }
 
-        public TileAbstract GetTile(ITileMovable movableTile)
+        /// <summary>
+        /// Получение индекса столбца, в котором находится тайл
+        /// </summary>
+        /// <param name="tileMovable"></param>
+        /// <returns></returns>
+        public int GetTileColumnIndex(ITileMovable tileMovable)
         {
-            foreach (var row in Rows)
+            for (int i = 0; i < Rows.Count; i++)
             {
-                var tile = row.GetTile(movableTile);
-                if (tile != null)
-                    return tile;
+                var tile = Rows[i].GetTile(tileMovable);
+                if (tile == null)
+                    continue;
+
+                return tile.IndexInRow;
             }
 
-            return null;
+            return -1;
         }
 
+        /// <summary>
+        /// Получение тайла по координатам
+        /// </summary>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        /// <returns></returns>
         public TileInBoard GetTileByCoordinates(int x, int y)
         {
             return TilesInBoard.FirstOrDefault(g => g.Coordinates.Equals(new int2(x, y)));
@@ -107,9 +123,5 @@ namespace SwipeMatch3.Gameplay
             IsActive = false;
             transform.gameObject.SetActive(false);
         }
-
-        public abstract RowAbstract GetUpRow(int index);
-
-        public abstract RowAbstract GetDownRow(int index);
     }
 }

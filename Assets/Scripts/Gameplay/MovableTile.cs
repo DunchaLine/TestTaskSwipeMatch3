@@ -1,7 +1,9 @@
 using SwipeMatch3.Gameplay.Interfaces;
 using SwipeMatch3.Gameplay.Settings;
 using SwipeMatch3.Gameplay.Signals;
+
 using UnityEngine;
+
 using Zenject;
 
 namespace SwipeMatch3.Gameplay
@@ -27,15 +29,23 @@ namespace SwipeMatch3.Gameplay
             IsInteractable = TileSetting.IsInteractable;
         }
 
+        /// <summary>
+        /// Перед началом Swap вверх/вниз
+        /// </summary>
         public void OnStartSwapUpDown()
         {
             _signalBus.Subscribe<GameSignals.OnSwappingSpritesUpDownSignal>(ChangeInteractable);
         }
 
+        /// <summary>
+        /// По окончании Swap вверх/вниз
+        /// </summary>
         public void OnEndSwapUpDown()
         {
             _signalBus.Unsubscribe<GameSignals.OnSwappingSpritesUpDownSignal>(ChangeInteractable);
+            IsInteractable = true;
         }
+
 
         private void ChangeInteractable()
         {
