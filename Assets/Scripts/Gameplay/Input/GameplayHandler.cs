@@ -1,7 +1,6 @@
 using SwipeMatch3.Gameplay.Interfaces;
 using SwipeMatch3.Gameplay.Signals;
-using System.Collections.Generic;
-using UnityEngine;
+using Zenject;
 
 namespace SwipeMatch3.Gameplay
 {
@@ -9,13 +8,28 @@ namespace SwipeMatch3.Gameplay
     {
         private BoardsHandler _boardsHandler;
 
-        [Zenject.Inject]
-        public void Init(BoardsHandler boardsHandler)
+        private SignalBus _signalBus;
+
+        [Inject]
+        public void Init(SignalBus signalBus, BoardsHandler boardsHandler)
         {
+            _signalBus = signalBus;
             _boardsHandler = boardsHandler;
         }
 
-        // добавить проверочные методы на возможность смены спрайтов только у соседних объектов
+        public void SwapSpritesUpToDown(GameSignals.SwapSpritesUpDownSignal swapUpDownSignal)
+        {
+            var downElement = swapUpDownSignal.DownElement;
+            var upElement = swapUpDownSignal.UpElement;
+
+            if (downElement == null || upElement == null)
+                return;
+
+            if (downElement.TileSetting.Visible && upElement.TileSetting.Visible)
+                return;
+
+            Swap(downElement, upElement);
+        }
 
         public void SwapSprites(GameSignals.SwapSignal swapSignal)
         {
@@ -25,13 +39,28 @@ namespace SwipeMatch3.Gameplay
             if (IsCorrectSwap(first, second) == false)
                 return;
 
+            Swap(first, second);
+
+            // отправлять сигнал только для тех столбцов, в которых произошли изменения
+            // как-то получить индексы стобцов, в которых произошли изменения и отправить их, 
+            // изменив NormalizeTilesOnBoardSignal, добавив в него List<int>. 
+            // в BoardsHandler.NormalizeTilesOnBoard тоже добавить List<int> и проходить не по всем
+            // а только по измененным
+            _signalBus.Fire<GameSignals.NormalizeTilesOnBoardSignal>();
+        }
+
+        /// <summary>
+        /// Свап тайлов
+        /// </summary>
+        /// <param name="first"></param>
+        /// <param name="second"></param>
+        private void Swap(ITileMovable first, ITileMovable second)
+        {
             var firstSetting = first.TileSetting;
             var secondSetting = second.TileSetting;
 
             first.SetNewSetting(secondSetting);
             second.SetNewSetting(firstSetting);
-
-            // отправить событие на нормализацию board
         }
 
         private bool IsCorrectSwap(ITileMovable first, ITileMovable second)

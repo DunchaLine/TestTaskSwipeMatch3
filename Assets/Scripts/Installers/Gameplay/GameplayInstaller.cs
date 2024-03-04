@@ -19,11 +19,15 @@ namespace SwipeMatch3.Gameplay.Installers
         {
             SignalBusInstaller.Install(Container);
 
-            // signals
             Container.DeclareSignal<GameSignals.SwapSignal>();
+            Container.DeclareSignal<GameSignals.ChangeBoardSignal>();
+            Container.DeclareSignal<GameSignals.NormalizeTilesOnBoardSignal>();
+            Container.DeclareSignal<GameSignals.SwapSpritesUpDownSignal>();
+            Container.DeclareSignal<GameSignals.OnSwappingSpritesUpDownSignal>();
 
             Container.BindInterfacesAndSelfTo<GameplayHandler>().AsSingle();
             Container.BindSignal<GameSignals.SwapSignal>().ToMethod<GameplayHandler>(g => g.SwapSprites).FromResolve();
+            Container.BindSignal<GameSignals.SwapSpritesUpDownSignal>().ToMethod<GameplayHandler>(g => g.SwapSpritesUpToDown).FromResolve();
 
             Container.BindInterfacesAndSelfTo<BoardsHandler>().AsSingle();
 

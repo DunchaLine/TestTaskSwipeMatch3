@@ -1,4 +1,5 @@
 using UnityEngine;
+using static SwipeMatch3.Gameplay.BoardAbstract;
 
 namespace SwipeMatch3.Gameplay.Settings
 {
@@ -14,6 +15,7 @@ namespace SwipeMatch3.Gameplay.Settings
         [field: SerializeField]
         public bool Visible { get; private set; } = false;
 
+        [field: SerializeField]
         public bool IsInteractable { get; private set; } = true;
     }
 }

@@ -10,8 +10,6 @@ namespace SwipeMatch3.Gameplay
     [RequireComponent(typeof(SpriteRenderer), typeof(Image))]
     public abstract class TileAbstract : MonoBehaviour
     {
-        //public bool IsInteractable => SpriteRenderer.color.a > 0 && Image.color.a > 0;
-
         public SpriteRenderer SpriteRenderer { get; private set; }
 
         public Image Image { get; private set; }

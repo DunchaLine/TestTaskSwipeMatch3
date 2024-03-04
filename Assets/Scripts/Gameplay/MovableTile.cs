@@ -1,6 +1,8 @@
 using SwipeMatch3.Gameplay.Interfaces;
 using SwipeMatch3.Gameplay.Settings;
+using SwipeMatch3.Gameplay.Signals;
 using UnityEngine;
+using Zenject;
 
 namespace SwipeMatch3.Gameplay
 {
@@ -11,10 +13,33 @@ namespace SwipeMatch3.Gameplay
     {
         public bool IsInteractable { get; private set; }
 
+        private SignalBus _signalBus;
+
+        [Inject]
+        public void Init(SignalBus signalBus)
+        {
+            _signalBus = signalBus;
+        }
+
         public override void Init(int index, TileSetting tileSetting)
         {
             base.Init(index, tileSetting);
             IsInteractable = TileSetting.IsInteractable;
+        }
+
+        public void OnStartSwapUpDown()
+        {
+            _signalBus.Subscribe<GameSignals.OnSwappingSpritesUpDownSignal>(ChangeInteractable);
+        }
+
+        public void OnEndSwapUpDown()
+        {
+            _signalBus.Unsubscribe<GameSignals.OnSwappingSpritesUpDownSignal>(ChangeInteractable);
+        }
+
+        private void ChangeInteractable()
+        {
+            IsInteractable = false;
         }
 
         private void SetNewSprite(Sprite sprite)

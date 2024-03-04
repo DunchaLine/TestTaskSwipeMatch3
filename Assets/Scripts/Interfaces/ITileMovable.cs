@@ -14,5 +14,9 @@ namespace SwipeMatch3.Gameplay.Interfaces
         public TileSetting TileSetting { get; }
 
         public void SetNewSetting(TileSetting newSetting);
+
+        public void OnStartSwapUpDown();
+
+        public void OnEndSwapUpDown();
     }
 }

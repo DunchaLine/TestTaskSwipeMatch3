@@ -56,6 +56,13 @@ namespace SwipeMatch3.Gameplay
             return null;
         }
 
+        public TileAbstract GetTile(int index)
+        {
+            if (index >= Tiles.Count)
+                return null;
+            return Tiles[index];
+        }
+
         public abstract MovableTile GetLeftTile();
 
         public abstract MovableTile GetRightTile();
