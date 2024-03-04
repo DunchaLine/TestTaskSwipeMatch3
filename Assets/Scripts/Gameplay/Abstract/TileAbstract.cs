@@ -10,7 +10,7 @@ namespace SwipeMatch3.Gameplay
     [RequireComponent(typeof(SpriteRenderer), typeof(Image))]
     public abstract class TileAbstract : MonoBehaviour
     {
-        public bool IsInteractable => SpriteRenderer.color.a > 0 && Image.color.a > 0;
+        //public bool IsInteractable => SpriteRenderer.color.a > 0 && Image.color.a > 0;
 
         public SpriteRenderer SpriteRenderer { get; private set; }
 
@@ -24,7 +24,7 @@ namespace SwipeMatch3.Gameplay
 
         protected Color color;
 
-        public void Init(int index, TileSetting tileSetting)
+        public virtual void Init(int index, TileSetting tileSetting)
         {
             Image = GetComponent<Image>();
             SpriteRenderer = GetComponent<SpriteRenderer>();
@@ -44,6 +44,8 @@ namespace SwipeMatch3.Gameplay
 
                 Image.color = color;
                 SpriteRenderer.color = color;
+
+                TileSetting = (TileSetting)ScriptableObject.CreateInstance(typeof(TileSetting));
             }
 
             IndexInRow = index;

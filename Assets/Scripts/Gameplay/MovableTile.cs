@@ -9,6 +9,14 @@ namespace SwipeMatch3.Gameplay
     /// </summary>
     public class MovableTile : TileAbstract, ITileMovable
     {
+        public bool IsInteractable { get; private set; }
+
+        public override void Init(int index, TileSetting tileSetting)
+        {
+            base.Init(index, tileSetting);
+            IsInteractable = TileSetting.IsInteractable;
+        }
+
         private void SetNewSprite(Sprite sprite)
         {
             if (sprite == null)

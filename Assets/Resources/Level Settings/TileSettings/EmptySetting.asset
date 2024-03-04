@@ -13,4 +13,4 @@ MonoBehaviour:
   m_Name: EmptySetting
   m_EditorClassIdentifier: 
   <Sprite>k__BackingField: {fileID: 0}
-  <Visible>k__BackingField: 0
+  <Visible>k__BackingField: 1

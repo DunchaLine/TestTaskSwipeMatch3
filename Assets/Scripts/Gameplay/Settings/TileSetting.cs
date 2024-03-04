@@ -12,6 +12,8 @@ namespace SwipeMatch3.Gameplay.Settings
         public Sprite Sprite { get; private set; }
 
         [field: SerializeField]
-        public bool Visible { get; private set; }
+        public bool Visible { get; private set; } = false;
+
+        public bool IsInteractable { get; private set; } = true;
     }
 }

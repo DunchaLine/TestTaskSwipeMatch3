@@ -1,3 +1,4 @@
+using SwipeMatch3.Gameplay.Interfaces;
 using SwipeMatch3.Gameplay.Settings;
 using System.Collections.Generic;
 using UnityEngine;
@@ -41,6 +42,18 @@ namespace SwipeMatch3.Gameplay
                 newTile.Init(i, tilesInRow[i]);
                 Tiles.Add(newTile);
             }
+        }
+
+        public TileAbstract GetTile(ITileMovable movableTile)
+        {
+            foreach (var tile in Tiles)
+            {
+                var tileMovable = tile as ITileMovable;
+                if (tileMovable != null && movableTile == tileMovable)
+                    return tile;
+            }
+
+            return null;
         }
 
         public abstract MovableTile GetLeftTile();

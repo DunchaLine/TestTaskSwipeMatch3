@@ -5,6 +5,8 @@ namespace SwipeMatch3.Gameplay.Interfaces
 {
     public interface ITileMovable
     {
+        public bool IsInteractable { get; }
+
         public Color Color { get; }
 
         public SpriteRenderer SpriteRenderer { get; }

@@ -1,3 +1,4 @@
+using SwipeMatch3.Gameplay.Signals;
 using UnityEngine;
 using Zenject;
 
@@ -16,7 +17,15 @@ namespace SwipeMatch3.Gameplay.Installers
 
         public override void InstallBindings()
         {
-            Container.Bind<GameplayHandler>().FromComponentInHierarchy().AsSingle();
+            SignalBusInstaller.Install(Container);
+
+            // signals
+            Container.DeclareSignal<GameSignals.SwapSignal>();
+
+            Container.BindInterfacesAndSelfTo<GameplayHandler>().AsSingle();
+            Container.BindSignal<GameSignals.SwapSignal>().ToMethod<GameplayHandler>(g => g.SwapSprites).FromResolve();
+
+            Container.BindInterfacesAndSelfTo<BoardsHandler>().AsSingle();
 
             Container.BindInterfacesAndSelfTo<TileAbstract>().FromInstance(_tilePrefab).AsSingle();
             Container.BindInterfacesAndSelfTo<RowAbstract>().FromInstance(_rowPrefab).AsSingle();

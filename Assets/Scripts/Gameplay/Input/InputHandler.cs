@@ -1,8 +1,10 @@
 using SwipeMatch3.Gameplay.Interfaces;
+using SwipeMatch3.Gameplay.Signals;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
+using Zenject;
 
 namespace SwipeMatch3.Gameplay
 {
@@ -15,12 +17,12 @@ namespace SwipeMatch3.Gameplay
 
         private ITileMovable _currentTileUnderInput = null;
 
-        private GameplayHandler GameplayHandler { get; set; }
+        private SignalBus SignalBus { get; set; }
 
         [Zenject.Inject]
-        private void Init(GameplayHandler handler)
+        private void Init(SignalBus signalBus)
         {
-            GameplayHandler = handler;
+            SignalBus = signalBus;
         }
 
         private void Start()
@@ -48,13 +50,15 @@ namespace SwipeMatch3.Gameplay
                 if (tileOnTouchUp == _currentTileUnderInput)
                     return;
 
-                GameplayHandler.SwapSprites(_currentTileUnderInput, tileOnTouchUp);
-
-                // проверить на свайп
-
+                Swap(_currentTileUnderInput, tileOnTouchUp);
                 _currentTileUnderInput = null;
             }
 
+        }
+
+        private void Swap(ITileMovable first, ITileMovable second)
+        {
+            SignalBus.Fire(new GameSignals.SwapSignal(first, second));
         }
 
         private ITileMovable GetTileUnderTouch()

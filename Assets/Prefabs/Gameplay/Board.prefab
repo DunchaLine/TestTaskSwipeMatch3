@@ -58,8 +58,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b6015da6eabe6bd4ca24bf23f77fe403, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  <RowsLimit>k__BackingField: 6
-  <TilesLimit>k__BackingField: 4
+  _boardSettings: {fileID: 0}
 --- !u!114 &8573194467702723601
 MonoBehaviour:
   m_ObjectHideFlags: 0
