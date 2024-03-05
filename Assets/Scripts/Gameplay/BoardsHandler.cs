@@ -93,8 +93,6 @@ namespace SwipeMatch3.Gameplay
                 if (ColumnsChecking.Contains(columnIndex))
                     continue;
 
-                //ColumnsChecking.Add(columnIndex);
-                Debug.Log($"need to normalize columns: {columnIndex}");
                 columnsToCheck.Add(columnIndex);
             }
 
@@ -143,11 +141,16 @@ namespace SwipeMatch3.Gameplay
 
                     // если тайлы ещё не подписаны на события во время их движения вниз
                     if (tilesMovedDown.Contains(currentImovable) == false)
+                    {
+                        tilesMovedDown.Add(currentImovable);
                         currentImovable.OnStartSwapUpDown();
+                    }
 
                     if (tilesMovedDown.Contains(upperImovable) == false)
+                    {
+                        tilesMovedDown.Add(upperImovable);
                         upperImovable.OnStartSwapUpDown();
-
+                    }
 
                     await UniTask.WaitForSeconds(.2f);
 
@@ -159,11 +162,8 @@ namespace SwipeMatch3.Gameplay
                     _signalBus.Fire(new GameSignals.OnSwappingSpritesUpDownSignal());
 
                     await UniTask.WaitForSeconds(.2f);
-                    
-                    tilesMovedDown.Add(currentImovable);
-                    tilesMovedDown.Add(upperImovable);
-                    /*currentImovable.OnEndSwapUpDown();
-                    upperImovable.OnEndSwapUpDown();*/
+                    upperImovable.OnEndSwapUpDown();
+                    tilesMovedDown.Remove(upperImovable);
                 }
                 index++;
             }
