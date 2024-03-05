@@ -77,12 +77,12 @@ namespace SwipeMatch3.Gameplay
                     matches[i][j] = 0;
             }*/
 
-            // проходим по каждой координате в board
+            // РїСЂРѕС…РѕРґРёРј РїРѕ РєР°Р¶РґРѕР№ РєРѕРѕСЂРґРёРЅР°С‚Рµ РІ board
             for (int y = 0; y < _boardHeight; y++)
             {
                 for (int x = 0; x < _boardWidth; x++)
                 {
-                    // получаем тайл по координатам
+                    // РїРѕР»СѓС‡Р°РµРј С‚Р°Р№Р» РїРѕ РєРѕРѕСЂРґРёРЅР°С‚Р°Рј
                     var tile = _board.GetTileByCoordinates(x, y, out string tileName);
                     if (string.IsNullOrEmpty(tileName))
                     {
@@ -168,7 +168,8 @@ namespace SwipeMatch3.Gameplay
                 if (specialCase.IsCaseOnBoard(matchInfo, _tilesInBoard, out var tilesToClear))
                     specialCases.Add(specialCase);
             }
-            // очищать при помощи запуска сигнала на очистку, в который передавать список с тайлами, которые нужно сделать прозрачными
+            
+            // РѕС‡РёС‰Р°С‚СЊ С‚Р°Р№Р»С‹ РїСЂРё РїРѕРјРѕС‰Рё Р·Р°РїСѓСЃРєР° СЃРёРіРЅР°Р»Р° РЅР° РѕС‡РёСЃС‚РєСѓ, РІ РєРѕС‚РѕСЂС‹Р№ РїРµСЂРµРґР°РІР°С‚СЊ СЃРїРёСЃРѕРє СЃ С‚Р°Р№Р»Р°РјРё, РєРѕС‚РѕСЂС‹Рµ РЅСѓР¶РЅРѕ СЃРґРµР»Р°С‚СЊ РїСЂРѕР·СЂР°С‡РЅС‹РјРё
         }
     }
 }

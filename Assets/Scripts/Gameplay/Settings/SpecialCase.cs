@@ -25,7 +25,43 @@ namespace SwipeMatch3.Gameplay.Settings
         }
 
         /// <summary>
-        /// ��������� ������������� ���������� ������� ������ � ����� ������ � ������
+        /// Возвращает количество тайлов в фигуре
+        /// </summary>
+        /// <returns></returns>
+        public int GetVisibleTiles()
+        {
+            int tilesCount = 0;
+            foreach (var row in Rows)
+                tilesCount += row.IsVisibleTile.Where(g => g == true).Count();
+
+            return tilesCount;
+        }
+
+        /// <summary>
+        /// Есть ли частный случай на board
+        /// </summary>
+        /// <param name="matchInfo"></param>
+        /// <param name="tilesInBoard"></param>
+        /// <param name="tilesToClear"></param>
+        /// <returns></returns>
+        public bool IsCaseOnBoard(MatchInfo matchInfo, TileInBoard[] tilesInBoard, out List<TileInBoard> tilesToClear)
+        {
+            // TODO: добавить проверку на единое количество тайлов в строках в SpecialCase
+            var rows = Rows;
+            tilesToClear = new List<TileInBoard>();
+            // у фигуры максимум может быть 4 состояния
+            for (int i = 0; i < 4; i++)
+            {
+                rows = RotateFigure(rows);
+                if (IsCaseOnBoard(rows, matchInfo, tilesInBoard, out tilesToClear))
+                    return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Получение максимального количество видимых тайлов в одной строке в фигуре
         /// </summary>
         /// <param name="rows"></param>
         /// <returns></returns>
@@ -48,52 +84,199 @@ namespace SwipeMatch3.Gameplay.Settings
         }
 
         /// <summary>
-        /// ���������� ���������� ������ � ������
+        /// Получение максимального количества видимых тайлов в одном столбце в фигуре
         /// </summary>
+        /// <param name="rows"></param>
+        /// <param name="columnIndex"></param>
         /// <returns></returns>
-        public int GetVisibleTiles()
+        private int GetMaxLengthVisibleTilesInColumn(Row[] rows, out int columnIndex)
         {
-            int tilesCount = 0;
-            foreach (var row in Rows)
-                tilesCount += row.IsVisibleTile.Where(g => g == true).Count();
+            columnIndex = -1;
+            if (rows == null || rows.Length == 0)
+                return -1;
 
-            return tilesCount;
+
+            int maxTilesInColumn = 0;
+            columnIndex = 0;
+            for (int j = 0; j < rows[0].IsVisibleTile.Length; j++)
+            {
+                int visibleTilesInColumn = 0;
+                for (int i = 0; i < rows.Length; i++)
+                {
+                    if (rows[i].IsVisibleTile[j])
+                        visibleTilesInColumn++;
+                }
+                if (visibleTilesInColumn > maxTilesInColumn)
+                {
+                    maxTilesInColumn = visibleTilesInColumn;
+                    columnIndex = j;
+                }
+            }
+
+            return maxTilesInColumn;
         }
 
-        public bool IsCaseOnBoard(MatchInfo matchInfo, TileInBoard[] tilesInBoard, out List<TileInBoard> tilesToClear)
+        /// <summary>
+        /// Получение тайлов на очистку по строке из фигуры
+        /// </summary>
+        /// <param name="row">строка фигуры (частного случая)</param>
+        /// <param name="tilesInBoard">тайлы на доске</param>
+        /// <param name="matchInfo">инфа о матче</param>
+        /// <param name="y">позиция по y относительно частного случая</param>
+        /// <returns></returns>
+        private List<TileInBoard> GetTilesToClearFromBoard(Row row, TileInBoard[] tilesInBoard, MatchInfo matchInfo, int y)
         {
-            var rows = Rows;
-            tilesToClear = new List<TileInBoard>();
-            // � ������ �������� ����� ���� 4 ���������
-            for (int i = 0; i < 4; i++)
+            List<TileInBoard> tilesToClear = new List<TileInBoard>();
+
+            //проходим по всем тайлам в строке над стартовой
+            for (int tileIndex = 0; tileIndex < row.IsVisibleTile.Length; tileIndex++)
             {
-                rows = RotateFigure(rows);
-                if (IsCaseOnBoard(rows, matchInfo, tilesInBoard, out tilesToClear))
-                    return true;
+                if (row.IsVisibleTile[tileIndex] == false)
+                    continue;
+
+                var tile = tilesInBoard.FirstOrDefault(
+                    g => g.Coordinates.Equals(new int2(matchInfo.startX + tileIndex, matchInfo.startY + y)));
+                if (tile.Tile == null || matchInfo.tileName != tile.Tile.TileSetting.TileName)
+                    return new List<TileInBoard>();
+
+                tilesToClear.Add(tile);
             }
+
+            return tilesToClear;
+        }
+
+        /// <summary>
+        /// Получение списка тайлов (из частного случая) на очистку для вертикального матча
+        /// </summary>
+        /// <param name="rows">список строк от фигуры (частного случая)</param>
+        /// <param name="tilesInBoard">тайлы на доске</param>
+        /// <param name="matchInfo">инфа о матче</param>
+        /// <param name="x">позиция по x относительно частного случая</param>
+        /// <param name="xOffset">offset для x</param>
+        /// <returns></returns>
+        private List<TileInBoard> GetTilesToClearFromBoardByVertical(Row[] rows, TileInBoard[] tilesInBoard, MatchInfo matchInfo, int x, int xOffset)
+        {
+            var tilesToClear = new List<TileInBoard>();
+            // проходим по каждому тайлу в столбце
+            for (int i = 0; i < rows.Length; i++)
+            {
+                if (rows[i].IsVisibleTile[x] == false)
+                    continue;
+
+                var tile = tilesInBoard.FirstOrDefault(
+                    g => g.Coordinates.Equals(new int2(matchInfo.startX - x - xOffset, matchInfo.startY + i)));
+
+                if (tile.Tile == null || matchInfo.tileName != tile.Tile.TileSetting.TileName)
+                    return new List<TileInBoard>();
+
+                tilesToClear.Add(tile);
+            }
+
+            return tilesToClear;
+        }
+
+        /// <summary>
+        /// Есть ли вертикальный матч на доске в частном случае
+        /// </summary>
+        /// <param name="rows">список строк от фигуры (частного случая)</param>
+        /// <param name="matchInfo">инфа о матче</param>
+        /// <param name="tilesInBoard">тайлы на доске</param>
+        /// <param name="tilesToClear">список тайлов для удаления</param>
+        /// <returns></returns>
+        private bool IsVerticalCaseOnBoard(Row[] rows, MatchInfo matchInfo, TileInBoard[] tilesInBoard, out List<TileInBoard> tilesToClear)
+        {
+            tilesToClear = new List<TileInBoard>();
+            // TODO: добавить возможность комбинаций если в матче больше тайлов, чем в фигуре
+            if (GetMaxLengthVisibleTilesInColumn(rows, out int columnIndex) != matchInfo.count)
+                return false;
+
+            int columnsCount = rows[0].IsVisibleTile.Length;
+
+            // если колонка с матчем - первая => переходим на проверки справа
+            if (columnIndex == 0)
+                goto RightColumnsCheck;
+
+            // если есть в фигуре колонки левее, но на board нет колонки левее - пропуск
+            if (matchInfo.startX == 0)
+            {
+                tilesToClear = new List<TileInBoard>();
+                return false;
+            }
+
+            // проход по всем столбцам слева от столбца с матчем
+            int offset = columnIndex - 1 == 0 ? 1 : 0;
+            for (int j = columnIndex - 1; j >= 0; j--)
+            {
+                var tiles = GetTilesToClearFromBoardByVertical(rows, tilesInBoard, matchInfo, j, offset);
+                if (tiles.Count == 0)
+                {
+                    tilesToClear = new List<TileInBoard>();
+                    return false;
+                }
+
+                tilesToClear.AddRange(tiles);
+            }
+
+            // проход по всем столбцам справа от столбца с матчем
+            RightColumnsCheck:
+
+            for (int j = columnIndex + 1; j < columnsCount; j++)
+            {
+                offset = -j * 2;
+                var tiles = GetTilesToClearFromBoardByVertical(rows, tilesInBoard, matchInfo, j, offset);
+                if (tiles.Count == 0)
+                {
+                    tilesToClear = new List<TileInBoard>();
+                    return false;
+                }
+
+                tilesToClear.AddRange(tiles);
+            }
+
+            if (tilesToClear.Count != 0)
+                return true;
 
             return false;
         }
 
+        /// <summary>
+        /// Есть ли матч на доске в частном случае
+        /// </summary>
+        /// <param name="rows">список строк от фигуры (частного случая)</param>
+        /// <param name="matchInfo">инфа о матче</param>
+        /// <param name="tilesInBoard">тайлы на доске</param>
+        /// <param name="tilesToClear">список тайлов для удаления</param>
+        /// <returns></returns>
         private bool IsCaseOnBoard(Row[] rows, MatchInfo matchInfo, TileInBoard[] tilesInBoard, out List<TileInBoard> tilesToClear)
         {
             tilesToClear = new List<TileInBoard>();
-            // ���� � ������ ������������ ����� ������� ������ > ������������� ����� � ����� => return false
-            // TODO: �������� ����������� ���������� ���� � ����� ������ ������, ��� � ������
-            if (GetMaxLengthVisibleTilesInRow(rows) != matchInfo.count)
-                return false;
-
-            if (TryGetRowIndexWithMatch(rows, matchInfo, out int rowMatchIndex) == false)
-                return false;
-
-            // �������� ������� ������ ������ ��� �������������� ������
+            // если матч == вертикальным, для него свои проверки
             if (matchInfo.isHorizontal == false)
             {
-                Debug.LogError("vertical match");
+                if (IsVerticalCaseOnBoard(rows, matchInfo, tilesInBoard, out var verticalTilesToClear))
+                {
+                    tilesToClear.AddRange(verticalTilesToClear);
+                    if (tilesToClear.Count > 0)
+                    {
+                        Debug.Log($"find vertical special case: {name} in match: {matchInfo.tileName} ");
+                        return true;
+                    }
+                }
+
+                tilesToClear = new List<TileInBoard>();
                 return false;
             }
 
-            // �������� �� ���� ������� ��� ���������
+            // если у фигуры максимальное число видимых тайлов > максимального числа в матче => return false
+            // TODO: добавить возможность комбинаций если в матче больше тайлов, чем в фигуре
+            if (GetMaxLengthVisibleTilesInRow(rows) != matchInfo.count)
+                return false;
+
+            // TODO: мб нет необходимости в этой проверки, вынести получения индекса строки в GetMaxLengthVisibleTilesInRow
+            if (TryGetRowIndexWithMatch(rows, matchInfo, out int rowMatchIndex) == false)
+                return false;
+
+            // проходим по всем строкам над стартовой
             for (int rowIndex = rowMatchIndex + 1; rowIndex < rows.Length; rowIndex++)
             {
                 int offsetY = rowIndex - rowMatchIndex;
@@ -106,7 +289,7 @@ namespace SwipeMatch3.Gameplay.Settings
                 tilesToClear.AddRange(tiles);
             }
 
-            // �������� �� ���� ������ ��� ���������
+            // проходим по всем строка под стартовой
             for (int rowIndex = rowMatchIndex - 1; rowIndex >= 0; rowIndex--)
             {
                 int offset = rowIndex - rowMatchIndex;
@@ -122,54 +305,14 @@ namespace SwipeMatch3.Gameplay.Settings
 
             if (tilesToClear.Count > 0)
             {
-                Debug.Log($"find special case: {this.name} in match: {matchInfo.tileName}");
+                Debug.Log($"find horizontal special case: {this.name} in match: {matchInfo.tileName}");
                 return true;
             }
             return false;
         }
 
         /// <summary>
-        /// ��������� ������ �� ������� �� ������ �� ������
-        /// </summary>
-        /// <param name="row"></param>
-        /// <param name="tilesInBoard"></param>
-        /// <param name="matchInfo"></param>
-        /// <param name="y"></param>
-        /// <returns></returns>
-        private List<TileInBoard> GetTilesToClearFromBoard(Row row, TileInBoard[] tilesInBoard, MatchInfo matchInfo, int y)
-        {
-            List<TileInBoard> tilesToClear = new List<TileInBoard>();
-            //List<int> visibleTilesX = new List<int>();
-
-            //�������� �� ���� ������ � ������ ��� ���������
-            for (int tileIndex = 0; tileIndex < row.IsVisibleTile.Length; tileIndex++)
-            {
-                if (row.IsVisibleTile[tileIndex] == false)
-                    continue;
-                //visibleTilesX.Add(tileIndex);
-                var tile = tilesInBoard.FirstOrDefault(
-                    g => g.Coordinates.Equals(new int2(matchInfo.startX + tileIndex, matchInfo.startY + y)));
-                if (tile.Tile == null || matchInfo.tileName != tile.Tile.TileSetting.TileName)
-                    return new List<TileInBoard>();
-
-                tilesToClear.Add(tile);
-            }
-
-            /*foreach (var visibleTileX in visibleTilesX)
-            {
-                var tile = tilesInBoard.FirstOrDefault(
-                    g => g.Coordinates.Equals(new int2(matchInfo.startX + visibleTileX, matchInfo.startY + y)));
-                if (tile.Tile == null || matchInfo.tileName != tile.Tile.TileSetting.TileName)
-                    return new List<TileInBoard>();
-
-                tilesToClear.Add(tile);
-            }*/
-
-            return tilesToClear;
-        }
-
-        /// <summary>
-        /// ��������� ������� ������ �� ������ �� �������� �����
+        /// Получение индекса строки из фигуры по искомому матчу
         /// </summary>
         /// <param name="rows"></param>
         /// <param name="matchInfo"></param>
@@ -203,7 +346,7 @@ namespace SwipeMatch3.Gameplay.Settings
         }
 
         /// <summary>
-        /// ������� ������
+        /// Поворот фигуры
         /// </summary>
         /// <param name="rows"></param>
         /// <returns></returns>
