@@ -20,12 +20,18 @@ namespace SwipeMatch3.Gameplay
 
         public readonly bool isHorizontal;
 
-        public MatchInfo(int startX, int startY, int count, bool isHorizontal)
+        public readonly string tileName;
+
+        //public readonly List<TileInBoard> tiles;
+
+        public MatchInfo(int startX, int startY, int count, bool isHorizontal, string tileName)//List<TileInBoard> tiles)
         {
             this.startX = startX;
             this.startY = startY;
             this.count = count;
             this.isHorizontal = isHorizontal;
+            this.tileName = tileName;
+            //this.tiles = tiles;
 
             if (isHorizontal)
                 end = startX + count;
@@ -87,22 +93,22 @@ namespace SwipeMatch3.Gameplay
 
                     if (horizontalMatchesInfo.FirstOrDefault(g => y == g.startY && x >= g.startX && x <= g.end) == null)//) == null)
                     {
-                        int horizontalMatchesCount = GetHorizontalMatchCount(x, y, tileName);
+                        int horizontalMatchesCount = GetHorizontalMatchCount(x, y, tileName, out var tiles);
                         if (horizontalMatchesCount >= 3)
                         {
-                            Debug.Log($"find horizontal match by startPos: {x},{y} with count: {horizontalMatchesCount}");
-                            MatchInfo newMatchInfo = new MatchInfo(x, y, horizontalMatchesCount, true);
+                            //Debug.Log($"find horizontal match by startPos: {x},{y} with count: {horizontalMatchesCount}");
+                            MatchInfo newMatchInfo = new MatchInfo(x, y, horizontalMatchesCount, true, tileName);//tiles);
                             horizontalMatchesInfo.Add(newMatchInfo);
                         }
                     }
 
                     if (verticalMatchesInfo.FirstOrDefault(g => x == g.startX && y >= g.startY && y <= g.end) == null)// && ) == null)
                     {
-                        int verticalMatchesCount = GetVerticalMatchCount(x, y, tileName);
+                        int verticalMatchesCount = GetVerticalMatchCount(x, y, tileName, out var tiles);
                         if (verticalMatchesCount >= 3)
                         {
-                            Debug.Log($"find vertical match by startPos: {x},{y} with count: {verticalMatchesCount}");
-                            MatchInfo newMatchInfo = new MatchInfo(x, y, verticalMatchesCount, false);
+                            //Debug.Log($"find vertical match by startPos: {x},{y} with count: {verticalMatchesCount}");
+                            MatchInfo newMatchInfo = new MatchInfo(x, y, verticalMatchesCount, false, tileName);//tiles);
                             verticalMatchesInfo.Add(newMatchInfo);
                         }
                     }
@@ -118,24 +124,27 @@ namespace SwipeMatch3.Gameplay
             return null;
         }
 
-        private int GetHorizontalMatchCount(int startX, int startY, string tileName)
+        private int GetHorizontalMatchCount(int startX, int startY, string tileName, out List<TileInBoard> matchedTiles)
         {
+            matchedTiles = new List<TileInBoard>();
             int count = 0;
 
             for (int x = startX; x < _boardWidth; x++)
             {
                 var tile = _board.GetTileByCoordinates(x, startY, out string nextTileName);
-                if (tileName == nextTileName)
-                    count++;
-                else
+                if (tileName != nextTileName)
                     break;
+
+                matchedTiles.Add(tile);
+                count++;
             }
 
             return count;
         }
 
-        private int GetVerticalMatchCount(int startX, int startY, string tileName)
+        private int GetVerticalMatchCount(int startX, int startY, string tileName, out List<TileInBoard> matchedTiles)
         {
+            matchedTiles = new List<TileInBoard>();
             int count = 0;
 
             for (int y = startY; y < _boardHeight; y++)
@@ -144,6 +153,7 @@ namespace SwipeMatch3.Gameplay
                 if (tileName != nextTileName)
                     break;
 
+                matchedTiles.Add(tile);
                 count++;
             }
 
@@ -155,9 +165,10 @@ namespace SwipeMatch3.Gameplay
             var specialCases = new List<SpecialCase>();
             foreach (var specialCase in _specialCases)
             {
-                if (specialCase.IsEqual(matchInfo, _tilesInBoard))
+                if (specialCase.IsCaseOnBoard(matchInfo, _tilesInBoard, out var tilesToClear))
                     specialCases.Add(specialCase);
             }
+            // очищать при помощи запуска сигнала на очистку, в который передавать список с тайлами, которые нужно сделать прозрачными
         }
     }
 }

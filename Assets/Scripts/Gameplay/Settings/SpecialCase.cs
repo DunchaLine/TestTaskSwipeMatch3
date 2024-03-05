@@ -1,8 +1,9 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.Mathematics;
 using UnityEngine;
+using static SwipeMatch3.Gameplay.BoardAbstract;
 
 namespace SwipeMatch3.Gameplay.Settings
 {
@@ -11,8 +12,6 @@ namespace SwipeMatch3.Gameplay.Settings
     {
         [field: SerializeField]
         public Row[] Rows { get; private set; }
-
-        private int _mostLengthRowIndex = -1;
 
         [Serializable]
         public class Row
@@ -25,52 +24,27 @@ namespace SwipeMatch3.Gameplay.Settings
             }
         }
 
-        private bool IsInitialCaseHorizontal
+        /// <summary>
+        /// ѕолучение максимального количество видимых тайлов в одной строке в фигуре
+        /// </summary>
+        /// <param name="rows"></param>
+        /// <returns></returns>
+        private int GetMaxLengthVisibleTilesInRow(Row[] rows)
         {
-            get
-            {
-                return Rows.Length < Rows[0].IsVisibleTile.Length;
-            }
-        }
+            if (rows == null || rows.Length == 0)
+                return -1;
+            else if (rows.Length == 1)
+                return rows[0].IsVisibleTile.Length;
 
-        private void SetMostLengthRowIndex()
-        {
-            if (_mostLengthRowIndex != -1)
-                return;
-
-            if (Rows == null || Rows.Length == 0)
+            var maxTilesInRow = rows[0].IsVisibleTile.Where(g => g == true).Count();
+            for (int i = 1; i < rows.Length; i++)
             {
-                _mostLengthRowIndex = -1;
-                return;
+                var count = rows[i].IsVisibleTile.Where(g => g == true).Count();
+                if (count > maxTilesInRow)
+                    maxTilesInRow = count;
             }
 
-            if (Rows.Length == 1)
-            {
-                _mostLengthRowIndex = Rows[0].IsVisibleTile.Length;
-                return;
-            }
-
-            for (int i = 1; i < Rows.Length; i++)
-            {
-                if (Rows[_mostLengthRowIndex].IsVisibleTile.Where(g => g == true).Count() < Rows[i].IsVisibleTile.Where(g => g == true).Count())
-                    _mostLengthRowIndex = i;
-            }
-
-            /*if (MostLengthRowIndex != - 1)
-                return MostLengthRowIndex;
-
-
-            Row mostLengthRow = Rows[0];
-            if (Rows.Length == 1)
-                return MostLengthRowIndex;
-
-            for (int i = 1; i < Rows.Length; i++)
-            {
-                if (mostLengthRow.IsVisibleTile.Where(g => g == true).Count() < Rows[i].IsVisibleTile.Where(g => g == true).Count())
-                    mostLengthRow = Rows[i];
-            }
-
-            return MostLengthRowIndex;*/
+            return maxTilesInRow;
         }
 
         /// <summary>
@@ -86,43 +60,153 @@ namespace SwipeMatch3.Gameplay.Settings
             return tilesCount;
         }
 
-        public bool IsEqual(MatchInfo matchInfo, BoardAbstract.TileInBoard[] tilesInBoard)
+        public bool IsCaseOnBoard(MatchInfo matchInfo, TileInBoard[] tilesInBoard, out List<TileInBoard> tilesToClear)
         {
-            RotateFigure(Rows);
-            /*SetMostLengthRowIndex();
-            if (_mostLengthRowIndex == -1)
-                return false;*/
-
-
-            // если квадрат, то mirror нужен RotateFigure
-
+            var rows = Rows;
+            tilesToClear = new List<TileInBoard>();
+            // у фигуры максимум может быть 4 состо€ни€
+            for (int i = 0; i < 4; i++)
+            {
+                rows = RotateFigure(rows);
+                if (IsCaseOnBoard(rows, matchInfo, tilesInBoard, out tilesToClear))
+                    return true;
+            }
 
             return false;
         }
 
-        private Row[] MirrorFigure(Row[] rows)
+        private bool IsCaseOnBoard(Row[] rows, MatchInfo matchInfo, TileInBoard[] tilesInBoard, out List<TileInBoard> tilesToClear)
         {
-            Row[] newRows = new Row[_mostLengthRowIndex];
-            for (int i = 0; i < newRows.Length; i++)
-                newRows[i].IsVisibleTile = new bool[rows[i].IsVisibleTile.Length];
+            tilesToClear = new List<TileInBoard>();
+            // если у фигуры максимальное число видимых тайлов > максимального числа в матче => return false
+            // TODO: добавить возможность комбинаций если в матче больше тайлов, чем в фигуре
+            if (GetMaxLengthVisibleTilesInRow(rows) != matchInfo.count)
+                return false;
 
-            for (int i = 0; i < newRows.Length; i++)
+            if (TryGetRowIndexWithMatch(rows, matchInfo, out int rowMatchIndex) == false)
+                return false;
+
+            // временно частные случаи только дл€ горизонтальных матчей
+            if (matchInfo.isHorizontal == false)
             {
-                for (int j = 0; j < newRows[i].IsVisibleTile.Length; j++)
-                    newRows[i].IsVisibleTile[j] = rows[rows.Length - 1 - i].IsVisibleTile[j];
+                Debug.LogError("vertical match");
+                return false;
             }
 
-            return newRows;
-
-            /*for (int i = 0; i < rows.Length; i++)
+            // проходим по всем строкам над стартовой
+            for (int rowIndex = rowMatchIndex + 1; rowIndex < rows.Length; rowIndex++)
             {
-                for (int j = 0; j < rows[i].IsVisibleTile.Length; j++)
+                int offsetY = rowIndex - rowMatchIndex;
+                var tiles = GetTilesToClearFromBoard(rows[rowIndex], tilesInBoard, matchInfo, offsetY);
+                if (tiles.Count == 0)
                 {
-
+                    tilesToClear = new List<TileInBoard>();
+                    return false;
                 }
-            }*/
+                tilesToClear.AddRange(tiles);
+            }
+
+            // проходим по всем строка под стартовой
+            for (int rowIndex = rowMatchIndex - 1; rowIndex >= 0; rowIndex--)
+            {
+                int offset = rowIndex - rowMatchIndex;
+                var tiles = GetTilesToClearFromBoard(rows[rowIndex], tilesInBoard, matchInfo, offset);
+                if (tiles.Count == 0)
+                {
+                    tilesToClear = new List<TileInBoard>();
+                    return false;
+                }
+
+                tilesToClear.AddRange(tiles);
+            }
+
+            if (tilesToClear.Count > 0)
+            {
+                Debug.Log($"find special case: {this.name} in match: {matchInfo.tileName}");
+                return true;
+            }
+            return false;
         }
 
+        /// <summary>
+        /// ѕолучение тайлов на очистку по строке из фигуры
+        /// </summary>
+        /// <param name="row"></param>
+        /// <param name="tilesInBoard"></param>
+        /// <param name="matchInfo"></param>
+        /// <param name="y"></param>
+        /// <returns></returns>
+        private List<TileInBoard> GetTilesToClearFromBoard(Row row, TileInBoard[] tilesInBoard, MatchInfo matchInfo, int y)
+        {
+            List<TileInBoard> tilesToClear = new List<TileInBoard>();
+            //List<int> visibleTilesX = new List<int>();
+
+            //проходим по всем тайлам в строке над стартовой
+            for (int tileIndex = 0; tileIndex < row.IsVisibleTile.Length; tileIndex++)
+            {
+                if (row.IsVisibleTile[tileIndex] == false)
+                    continue;
+                //visibleTilesX.Add(tileIndex);
+                var tile = tilesInBoard.FirstOrDefault(
+                    g => g.Coordinates.Equals(new int2(matchInfo.startX + tileIndex, matchInfo.startY + y)));
+                if (tile.Tile == null || matchInfo.tileName != tile.Tile.TileSetting.TileName)
+                    return new List<TileInBoard>();
+
+                tilesToClear.Add(tile);
+            }
+
+            /*foreach (var visibleTileX in visibleTilesX)
+            {
+                var tile = tilesInBoard.FirstOrDefault(
+                    g => g.Coordinates.Equals(new int2(matchInfo.startX + visibleTileX, matchInfo.startY + y)));
+                if (tile.Tile == null || matchInfo.tileName != tile.Tile.TileSetting.TileName)
+                    return new List<TileInBoard>();
+
+                tilesToClear.Add(tile);
+            }*/
+
+            return tilesToClear;
+        }
+
+        /// <summary>
+        /// ѕолучение индекса строки из фигуры по искомому матчу
+        /// </summary>
+        /// <param name="rows"></param>
+        /// <param name="matchInfo"></param>
+        /// <param name="rowWithMatchIndex"></param>
+        /// <returns></returns>
+        private bool TryGetRowIndexWithMatch(Row[] rows, MatchInfo matchInfo, out int rowWithMatchIndex)
+        {
+            rowWithMatchIndex = -1;
+            for (int i = 0; i < rows.Length; i++)
+            {
+                int visibleInRow = 0;
+
+                foreach (var isVisible in rows[i].IsVisibleTile)
+                {
+                    if (isVisible == false)
+                    {
+                        visibleInRow = 0;
+                        continue;
+                    }
+                    visibleInRow++;
+
+                    if (visibleInRow >= matchInfo.count)
+                    {
+                        rowWithMatchIndex = i;
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// ѕоворот фигуры
+        /// </summary>
+        /// <param name="rows"></param>
+        /// <returns></returns>
         private Row[] RotateFigure(Row[] rows)
         {
             Row[] newRows = new Row[rows[0].IsVisibleTile.Length];
@@ -136,12 +220,6 @@ namespace SwipeMatch3.Gameplay.Settings
                 for (int i = 0; i < rows[0].IsVisibleTile.Length; i++)
                     newRows[i].IsVisibleTile[j] = rows[j].IsVisibleTile[tmpMax - i];
             }
-
-            /*for (int i = 0; i < rows.Length; i++)
-            {
-                for (int j = 0; j < rows[i].IsVisibleTile.Length; j++)
-                    newRows[j].IsVisibleTile[i] = rows[i].IsVisibleTile[j];
-            }*/
 
             return newRows;
         }
