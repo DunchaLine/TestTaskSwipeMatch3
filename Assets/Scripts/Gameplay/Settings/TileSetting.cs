@@ -9,6 +9,9 @@ namespace SwipeMatch3.Gameplay.Settings
     public class TileSetting : ScriptableObject
     {
         [field: SerializeField]
+        public string TileName { get; private set; }
+
+        [field: SerializeField]
         public Sprite Sprite { get; private set; }
 
         [field: SerializeField]
