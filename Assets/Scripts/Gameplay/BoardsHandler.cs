@@ -36,6 +36,7 @@ namespace SwipeMatch3.Gameplay
             _signalBus = signalBus;
             _signalBus.Subscribe<GameSignals.ChangeBoardSignal>(SetNextBoardActive);
             _signalBus.Subscribe<GameSignals.NormalizeTilesOnBoardSignal>(NormalizeTilesOnBoard);
+            _signalBus.Subscribe<GameSignals.FindMatches>(GetTilesToSetInvisible);
 
             ActiveBoard = boards[0];
             Boards = boards;
@@ -60,7 +61,7 @@ namespace SwipeMatch3.Gameplay
         {
             List<TileInBoard> tilesInBoard = new List<TileInBoard>();
             for (int x = 0; x < ActiveBoard.BoardHeight; x++)
-                tilesInBoard.Add(ActiveBoard.GetTileByCoordinates(x, columnIndex));
+                tilesInBoard.Add(ActiveBoard.GetTileByCoordinates(columnIndex, x));
 
             return tilesInBoard;
         }
@@ -91,6 +92,9 @@ namespace SwipeMatch3.Gameplay
                 // если этот столбец уже проверяется => пропуск
                 if (ColumnsChecking.Contains(columnIndex))
                     continue;
+
+                //ColumnsChecking.Add(columnIndex);
+                Debug.Log($"need to normalize columns: {columnIndex}");
                 columnsToCheck.Add(columnIndex);
             }
 
@@ -100,6 +104,7 @@ namespace SwipeMatch3.Gameplay
 
             await UniTask.WhenAll(tasks);
             ColumnsChecking = new List<int>();
+            _signalBus.Fire<GameSignals.FindMatches>();
             // после нормализации поля, вызвать Signal на проверку всех возможных комбинаций на очистку тайлов
         }
 
@@ -109,11 +114,14 @@ namespace SwipeMatch3.Gameplay
         /// <param name="columnIndex"></param>
         /// <param name="token"></param>
         /// <returns></returns>
-        private async UniTask MoveTilesDownTask(int columnIndex, CancellationToken token = default)
+        private async UniTask MoveTilesDownTask(int columnIndex, List<ITileMovable> tilesMovedDown = default, CancellationToken token = default)
         {
             ColumnsChecking.Add(columnIndex);
 
             List<TileInBoard> tilesInColumn = GetTilesInColumn(columnIndex);
+            if (tilesMovedDown == null)
+                tilesMovedDown = new List<ITileMovable>();
+
             // обновлять тайлы при каждом входе в UniTask
             int index = 0;
             foreach (var tileInColumn in tilesInColumn)
@@ -133,9 +141,13 @@ namespace SwipeMatch3.Gameplay
                     if (currentImovable == null || upperImovable == null)
                         break;
 
-                    // начинаем свапать вверх/вниз тайлы
-                    currentImovable.OnStartSwapUpDown();
-                    upperImovable.OnStartSwapUpDown();
+                    // если тайлы ещё не подписаны на события во время их движения вниз
+                    if (tilesMovedDown.Contains(currentImovable) == false)
+                        currentImovable.OnStartSwapUpDown();
+
+                    if (tilesMovedDown.Contains(upperImovable) == false)
+                        upperImovable.OnStartSwapUpDown();
+
 
                     await UniTask.WaitForSeconds(.2f);
 
@@ -145,19 +157,23 @@ namespace SwipeMatch3.Gameplay
                     _signalBus.Fire(
                         new GameSignals.SwapSpritesUpDownSignal(currentImovable, upperImovable));
                     _signalBus.Fire(new GameSignals.OnSwappingSpritesUpDownSignal());
-                    
-                    await UniTask.WaitForSeconds(.2f);
 
-                    // заканчиваем свапать тайлы
-                    currentImovable.OnEndSwapUpDown();
-                    upperImovable.OnEndSwapUpDown();
+                    await UniTask.WaitForSeconds(.2f);
+                    
+                    tilesMovedDown.Add(currentImovable);
+                    tilesMovedDown.Add(upperImovable);
+                    /*currentImovable.OnEndSwapUpDown();
+                    upperImovable.OnEndSwapUpDown();*/
                 }
                 index++;
             }
             
             // если в столбце все ещё нужно опускать тайлы, запускаем заново
             if (IsNeedToMoveDown(tilesInColumn))
-                await MoveTilesDownTask(columnIndex, token);
+                await MoveTilesDownTask(columnIndex, tilesMovedDown, token);
+
+            foreach (var tile in tilesMovedDown)
+                tile.OnEndSwapUpDown();
 
             ColumnsChecking.Remove(columnIndex);
         }
@@ -179,7 +195,7 @@ namespace SwipeMatch3.Gameplay
             for (int i = 0; i < sortedTiles.Count; i++)
             {
                 // если индекс не совпадает с позицией по оси, нужно ещё опускать тайлы
-                if (sortedTiles[i].Coordinates.x != i)
+                if (sortedTiles[i].Coordinates.y != i)
                     return true;
             }
 
@@ -342,8 +358,16 @@ namespace SwipeMatch3.Gameplay
             return true;
         }
 
+        public void GetTilesToSetInvisible()
+        {
+            var matchesCalculator = new MatchesCalculator(ActiveBoard);
+            matchesCalculator.FindMatches();
+            //var matchesCalculator = new MatchesCalculator(ActiveBoard);
+            //return matchesCalculator.FindMatches();
+        }
+
         // добавить метод для замены поля
-        // будет вызываться извне, по нажатию на кнопку
+        // будет вызываться извне, по нажатии на кнопку
         // нужно активировать следующее, после текущего, поле
         // если поле последнее => активировать первое
         public void SetNextBoardActive()

@@ -76,7 +76,7 @@ namespace SwipeMatch3.Gameplay
                 var row = Rows[rowIndex];
                 for (int tileIndex = 0; tileIndex < row.Tiles.Count; tileIndex++)
                 {
-                    TilesInBoard[i] = new TileInBoard(new int2(rowIndex, tileIndex), row.Tiles[tileIndex]);
+                    TilesInBoard[i] = new TileInBoard(new int2(tileIndex, rowIndex), row.Tiles[tileIndex]);
                     i++;
                 }
             }
@@ -110,6 +110,16 @@ namespace SwipeMatch3.Gameplay
         public TileInBoard GetTileByCoordinates(int x, int y)
         {
             return TilesInBoard.FirstOrDefault(g => g.Coordinates.Equals(new int2(x, y)));
+        }
+
+        public TileInBoard GetTileByCoordinates(int x, int y, out string tileName)
+        {
+            var tile = GetTileByCoordinates(x, y);
+            tileName = "";
+            if (tile.Tile != null)
+                tileName = tile.Tile.TileSetting.TileName;
+
+            return tile;
         }
 
         public void SetBoardActive()

@@ -12,5 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b66d19da93bd5624f8796a43325d3c41, type: 3}
   m_Name: FireSetting
   m_EditorClassIdentifier: 
+  <TileName>k__BackingField: Fire
   <Sprite>k__BackingField: {fileID: 21300000, guid: 54d89bf9faf24d44fb34c085e5dd8687, type: 3}
   <Visible>k__BackingField: 1
+  <IsInteractable>k__BackingField: 1

@@ -66,7 +66,7 @@ namespace SwipeMatch3.Gameplay
         private bool IsCorrectSwap(ITileMovable first, ITileMovable second)
         {
             // нельзя сдвинуть объекты, если первый из них - невидимый
-            if (first.TileSetting.Visible == false)
+            if (first.TileSetting.Visible == false || second == null)
                 return false;
 
             // нельзя взаимодействовать с блоками, которые на данный момент не являются интерактивными

@@ -27,6 +27,7 @@ namespace SwipeMatch3.Gameplay.Installers
             Container.DeclareSignal<GameSignals.NormalizeTilesOnBoardSignal>();
             Container.DeclareSignal<GameSignals.SwapSpritesUpDownSignal>();
             Container.DeclareSignal<GameSignals.OnSwappingSpritesUpDownSignal>();
+            Container.DeclareSignal<GameSignals.FindMatches>();
 
             // установка сигналов в определенные методы
             Container.BindInterfacesAndSelfTo<GameplayHandler>().AsSingle();

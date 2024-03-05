@@ -42,7 +42,7 @@ namespace SwipeMatch3.Gameplay
         /// </summary>
         public void OnEndSwapUpDown()
         {
-            _signalBus.Unsubscribe<GameSignals.OnSwappingSpritesUpDownSignal>(ChangeInteractable);
+            _signalBus.TryUnsubscribe<GameSignals.OnSwappingSpritesUpDownSignal>(ChangeInteractable);
             IsInteractable = true;
         }
 

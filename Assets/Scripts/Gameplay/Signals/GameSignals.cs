@@ -61,5 +61,10 @@ namespace SwipeMatch3.Gameplay.Signals
                 DownElement = down;
             }
         }
+
+        public class FindMatches
+        {
+
+        }
     }
 }
