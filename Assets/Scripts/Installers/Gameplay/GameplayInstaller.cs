@@ -35,6 +35,7 @@ namespace SwipeMatch3.Gameplay.Installers
             Container.BindSignal<GameSignals.SwapSpritesUpDownSignal>().ToMethod<GameplayHandler>(g => g.SwapSpritesUpToDown).FromResolve();
 
             Container.BindInterfacesAndSelfTo<BoardsHandler>().AsSingle();
+            //Container.Bind<MatchesCalculator>().AsSingle();
 
             Container.BindInterfacesAndSelfTo<TileAbstract>().FromInstance(_tilePrefab).AsSingle();
             Container.BindInterfacesAndSelfTo<RowAbstract>().FromInstance(_rowPrefab).AsSingle();

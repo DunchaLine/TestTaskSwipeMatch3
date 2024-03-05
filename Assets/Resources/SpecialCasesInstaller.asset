@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8d63ed6a0c223ff4d8cac7aeb8683e6b, type: 3}
+  m_Name: SpecialCasesInstaller
+  m_EditorClassIdentifier: 
+  _cases:
+  - {fileID: 11400000, guid: 28c8661d0cfb5ea4691e0f6b1cbf8826, type: 2}
+  - {fileID: 11400000, guid: e22e55ac2fb3b2543b85e477ca875af3, type: 2}
+  - {fileID: 11400000, guid: 227fb40bdc5ecb343b46f8d4fbc92dbf, type: 2}
+  - {fileID: 11400000, guid: 7f0c54d2a90d9784bb2e1b9b596076a3, type: 2}
+  - {fileID: 11400000, guid: db402c60ab7da9a4f9f38a65b72eb0b6, type: 2}
+  - {fileID: 11400000, guid: 09c1a00e866077643bc3c6ce3c1f6d71, type: 2}

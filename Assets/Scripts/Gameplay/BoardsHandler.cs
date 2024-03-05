@@ -22,10 +22,14 @@ namespace SwipeMatch3.Gameplay
 
         private SignalBus _signalBus;
 
+        private MatchesCalculator _matchesCalculator;
+
+        private DiContainer _container;
+
         private List<int> ColumnsChecking { get; set; } = new List<int>();
 
         [Inject]
-        private void Init(SignalBus signalBus, List<BoardAbstract> boards)
+        private void Init(SignalBus signalBus, List<BoardAbstract> boards, DiContainer container)
         {
             if (boards == null || boards.Count == 0)
             {
@@ -38,6 +42,7 @@ namespace SwipeMatch3.Gameplay
             _signalBus.Subscribe<GameSignals.NormalizeTilesOnBoardSignal>(NormalizeTilesOnBoard);
             _signalBus.Subscribe<GameSignals.FindMatches>(GetTilesToSetInvisible);
 
+            _container = container;
             ActiveBoard = boards[0];
             Boards = boards;
             foreach (var board in boards)
@@ -48,8 +53,19 @@ namespace SwipeMatch3.Gameplay
                 board.SetBoardInactive();
             }
 
+            SetMatchCalculator().Forget();
             // TODO: временно, перенести в UI, который будет запускать нормализацию по кнопке на старте игры
             //_signalBus.Fire<GameSignals.NormalizeTilesOnBoardSignal>();
+        }
+
+        private async UniTask SetMatchCalculator()
+        {
+            while (ActiveBoard.Rows.Count == 0)
+                await UniTask.NextFrame();
+
+            _matchesCalculator = new MatchesCalculator(ActiveBoard);
+            _container.Bind<MatchesCalculator>().FromInstance(_matchesCalculator).AsSingle();
+            _container.Inject(_matchesCalculator);
         }
 
         /// <summary>
@@ -360,8 +376,7 @@ namespace SwipeMatch3.Gameplay
 
         public void GetTilesToSetInvisible()
         {
-            var matchesCalculator = new MatchesCalculator(ActiveBoard);
-            matchesCalculator.FindMatches();
+            _matchesCalculator.FindMatches();
             //var matchesCalculator = new MatchesCalculator(ActiveBoard);
             //return matchesCalculator.FindMatches();
         }

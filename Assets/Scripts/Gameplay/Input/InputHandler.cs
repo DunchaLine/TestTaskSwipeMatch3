@@ -78,7 +78,6 @@ namespace SwipeMatch3.Gameplay
                 if (result.gameObject == null || result.gameObject.TryGetComponent(out ITileMovable tileMovable) == false)
                     continue;
 
-                Debug.Log($"hit tile: {result.gameObject.name}");
                 return tileMovable;
             }
 
