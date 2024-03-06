@@ -30,6 +30,14 @@ namespace SwipeMatch3.Gameplay.Signals
         }
 
         /// <summary>
+        /// Сигнал на реинициализацию активной доски
+        /// </summary>
+        public class ReInitBoardSignal
+        {
+
+        }
+
+        /// <summary>
         /// Сигнал на нормализацию поля
         /// </summary>
         public class NormalizeTilesOnBoardSignal

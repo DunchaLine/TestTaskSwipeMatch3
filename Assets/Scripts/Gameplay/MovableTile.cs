@@ -84,11 +84,5 @@ namespace SwipeMatch3.Gameplay
             TileSetting tileSetting = (TileSetting) ScriptableObject.CreateInstance(typeof(TileSetting));
             SetNewSetting(tileSetting);
         }
-
-        public override void Interact()
-        {
-            throw new System.NotImplementedException();
-        }
-
     }
 }

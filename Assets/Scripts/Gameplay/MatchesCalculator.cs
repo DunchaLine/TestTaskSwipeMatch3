@@ -1,12 +1,13 @@
 using SwipeMatch3.Gameplay.Settings;
 using SwipeMatch3.Gameplay.Signals;
-using System.Collections;
+using static SwipeMatch3.Gameplay.BoardAbstract;
+
 using System.Collections.Generic;
 using System.Linq;
-using Unity.Mathematics;
+
 using UnityEngine;
+
 using Zenject;
-using static SwipeMatch3.Gameplay.BoardAbstract;
 
 namespace SwipeMatch3.Gameplay
 {
@@ -138,7 +139,6 @@ namespace SwipeMatch3.Gameplay
                 tilesToClear.AddRange(matchInfo.tiles);
 
             _signalBus.Fire(new GameSignals.ClearTiles(tilesToClear));
-            // очищать тайлы при помощи запуска сигнала на очистку, в который передавать список с тайлами, которые нужно сделать прозрачными
         }
 
         /// <summary>
@@ -219,7 +219,7 @@ namespace SwipeMatch3.Gameplay
 
         private Dictionary<SpecialCase, List<TileInBoard>> GetSpecialCases(MatchInfo matchInfo)
         {
-            Dictionary<SpecialCase, List<TileInBoard>> specialCaseWithTilesToClear = 
+            Dictionary<SpecialCase, List<TileInBoard>> specialCaseWithTilesToClear =
                 new Dictionary<SpecialCase, List<TileInBoard>>();
             foreach (var specialCase in _specialCases)
             {

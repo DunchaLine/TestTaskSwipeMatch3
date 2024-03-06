@@ -22,13 +22,7 @@ namespace SwipeMatch3.Gameplay.Installers
             SignalBusInstaller.Install(Container);
 
             // сигналы
-            Container.DeclareSignal<GameSignals.SwapSignal>();
-            Container.DeclareSignal<GameSignals.ChangeBoardSignal>();
-            Container.DeclareSignal<GameSignals.NormalizeTilesOnBoardSignal>();
-            Container.DeclareSignal<GameSignals.SwapSpritesUpDownSignal>();
-            Container.DeclareSignal<GameSignals.OnSwappingSpritesUpDownSignal>();
-            Container.DeclareSignal<GameSignals.FindMatches>();
-            Container.DeclareSignal<GameSignals.ClearTiles>();
+            DeclareSignals();
 
             // установка сигналов в определенные методы
             Container.BindInterfacesAndSelfTo<GameplayHandler>().AsSingle();
@@ -41,5 +35,18 @@ namespace SwipeMatch3.Gameplay.Installers
             Container.BindInterfacesAndSelfTo<RowAbstract>().FromInstance(_rowPrefab).AsSingle();
             Container.BindInterfacesAndSelfTo<BoardAbstract>().FromComponentsInHierarchy().AsSingle().Lazy();
         }
+
+        private void DeclareSignals()
+        {
+            Container.DeclareSignal<GameSignals.SwapSignal>();
+            Container.DeclareSignal<GameSignals.ChangeBoardSignal>();
+            Container.DeclareSignal<GameSignals.NormalizeTilesOnBoardSignal>();
+            Container.DeclareSignal<GameSignals.SwapSpritesUpDownSignal>();
+            Container.DeclareSignal<GameSignals.OnSwappingSpritesUpDownSignal>();
+            Container.DeclareSignal<GameSignals.FindMatches>();
+            Container.DeclareSignal<GameSignals.ClearTiles>();
+            Container.DeclareSignal<GameSignals.ReInitBoardSignal>();
+        }
+
     }
 }

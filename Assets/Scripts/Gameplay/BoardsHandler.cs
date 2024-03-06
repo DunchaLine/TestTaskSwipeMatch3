@@ -30,6 +30,8 @@ namespace SwipeMatch3.Gameplay
 
         private List<UniTask> tasksToDropdown = new List<UniTask>();
 
+        private CancellationTokenSource _cancellationToken;
+
         [Inject]
         private void Init(SignalBus signalBus, List<BoardAbstract> boards, DiContainer container)
         {
@@ -40,9 +42,7 @@ namespace SwipeMatch3.Gameplay
             }
 
             _signalBus = signalBus;
-            _signalBus.Subscribe<GameSignals.ChangeBoardSignal>(SetNextBoardActive);
-            _signalBus.Subscribe<GameSignals.NormalizeTilesOnBoardSignal>(NormalizeTilesOnBoard);
-            _signalBus.Subscribe<GameSignals.FindMatches>(GetTilesToSetInvisible);
+            SubscribeSignals();
 
             _container = container;
             ActiveBoard = boards[0];
@@ -50,14 +50,33 @@ namespace SwipeMatch3.Gameplay
             foreach (var board in boards)
             {
                 if (board == ActiveBoard)
+                {
+                    _container.Inject(board);
+                    board.InitBoard();
                     continue;
+                }
 
                 board.SetBoardInactive();
             }
 
+            _cancellationToken = new CancellationTokenSource();
             SetMatchCalculator().Forget();
             // TODO: временно, перенести в UI, который будет запускать нормализацию по кнопке на старте игры
-            //_signalBus.Fire<GameSignals.NormalizeTilesOnBoardSignal>();
+            var columnsIndexes = new List<int>();
+            for (int i = 0; i < ActiveBoard.BoardWidth; i++)
+                columnsIndexes.Add(i);
+            _signalBus.Fire(new GameSignals.NormalizeTilesOnBoardSignal(columnsIndexes));
+        }
+
+        /// <summary>
+        /// Подписки на сигналы
+        /// </summary>
+        private void SubscribeSignals()
+        {
+            _signalBus.Subscribe<GameSignals.NormalizeTilesOnBoardSignal>(NormalizeTilesOnBoard);
+            _signalBus.Subscribe<GameSignals.FindMatches>(GetTilesToSetInvisible);
+            _signalBus.Subscribe<GameSignals.ChangeBoardSignal>(SetNextBoardActive);
+            _signalBus.Subscribe<GameSignals.ReInitBoardSignal>(ReInitActiveBoard);
         }
 
         private async UniTask SetMatchCalculator()
@@ -66,7 +85,13 @@ namespace SwipeMatch3.Gameplay
                 await UniTask.NextFrame();
 
             _matchesCalculator = new MatchesCalculator(ActiveBoard);
-            _container.Bind<MatchesCalculator>().FromInstance(_matchesCalculator).AsSingle();
+
+            var matchesCalculator = _container.TryResolve<MatchesCalculator>();
+            if (matchesCalculator != null)
+                _container.Rebind<MatchesCalculator>().FromInstance(_matchesCalculator).AsCached();
+            else
+                _container.Bind<MatchesCalculator>().FromInstance(_matchesCalculator).AsCached();
+
             _container.Inject(_matchesCalculator);
         }
 
@@ -95,8 +120,6 @@ namespace SwipeMatch3.Gameplay
         private async void NormalizeTilesOnBoard(GameSignals.NormalizeTilesOnBoardSignal signal)
         {
             await UniTask.WhenAll(tasksToDropdown);
-
-            //List<int> columnsToCheck = new List<int>();
             tasksToDropdown = new List<UniTask>();
 
             var columns = signal.ColumnsIndexes.Distinct().ToList();
@@ -116,12 +139,8 @@ namespace SwipeMatch3.Gameplay
                 if (ColumnsChecking.Contains(columnIndex))
                     continue;
 
-                //columnsToCheck.Add(columnIndex);
                 tasksToDropdown.Add(MoveTilesDownTask(columnIndex));
             }
-
-            /*foreach (var columnIndex in columnsToCheck)
-                tasksToDropdown.Add(MoveTilesDownTask(columnIndex));*/
 
             await UniTask.WhenAll(tasksToDropdown);
             tasksToDropdown = new List<UniTask>();
@@ -135,7 +154,7 @@ namespace SwipeMatch3.Gameplay
         /// <param name="columnIndex"></param>
         /// <param name="token"></param>
         /// <returns></returns>
-        private async UniTask MoveTilesDownTask(int columnIndex, List<ITileMovable> tilesMovedDown = default, CancellationToken token = default)
+        private async UniTask MoveTilesDownTask(int columnIndex, List<ITileMovable> tilesMovedDown = default)
         {
             ColumnsChecking.Add(columnIndex);
 
@@ -180,7 +199,14 @@ namespace SwipeMatch3.Gameplay
 
                     await UniTask.WaitForSeconds(.2f);
 
-                    token.ThrowIfCancellationRequested();
+                    if (_cancellationToken.IsCancellationRequested)
+                    {
+                        foreach (var tile in tilesMovedDown)
+                            tile.OnEndSwapUpDown();
+
+                        Debug.Log($"cancelling task");
+                        return;
+                    }
 
                     // запускаем сигналы на сам свап, и на действия, необходимые во время свапа вверх/вниз
                     _signalBus.Fire(
@@ -196,7 +222,7 @@ namespace SwipeMatch3.Gameplay
             
             // если в столбце все ещё нужно опускать тайлы, запускаем заново
             if (IsNeedToMoveDown(tilesInColumn))
-                await MoveTilesDownTask(columnIndex, tilesMovedDown, token);
+                await MoveTilesDownTask(columnIndex, tilesMovedDown);
 
             foreach (var tile in tilesMovedDown)
                 tile.OnEndSwapUpDown();
@@ -395,13 +421,49 @@ namespace SwipeMatch3.Gameplay
         // если поле последнее => активировать первое
         public void SetNextBoardActive()
         {
-            //signalBus.Fire<GameSignal.ChangeBoardSignal>() по окончании текущей игры (когда все объекты невидимые)
+            _cancellationToken.Cancel();
+            if (Boards.Count == 1)
+            {
+                ActiveBoard.InitBoard();
+                return;
+            }
+
+            // получаем индекс активной board на сцене
+            int activeBoardIndex = 0;
+            for (int i = 0; i < Boards.Count; i++)
+            {
+                if (Boards[i] != ActiveBoard)
+                    continue;
+
+                activeBoardIndex = i;
+            }
+
+            // если это последняя board, то индекс следующий = 0
+            if (activeBoardIndex == Boards.Count - 1)
+                activeBoardIndex = 0;
+            // в других случаях, индекс прибавляем на 1
+            else
+                activeBoardIndex++;
+
+            _cancellationToken = new CancellationTokenSource();
+            ActiveBoard.SetBoardInactive();
+            ActiveBoard = Boards[activeBoardIndex];
+            ActiveBoard.InitBoard();
+            SetMatchCalculator().Forget();
+        }
+
+        public void ReInitActiveBoard()
+        {
+            _cancellationToken.Cancel();
+            ActiveBoard.InitBoard();
         }
 
         public void Dispose()
         {
-            _signalBus.Unsubscribe<GameSignals.ChangeBoardSignal>(SetNextBoardActive);
             _signalBus.Unsubscribe<GameSignals.NormalizeTilesOnBoardSignal>(NormalizeTilesOnBoard);
+            _signalBus.Unsubscribe<GameSignals.FindMatches>(GetTilesToSetInvisible);
+            _signalBus.Unsubscribe<GameSignals.ChangeBoardSignal>(SetNextBoardActive);
+            _signalBus.Unsubscribe<GameSignals.ReInitBoardSignal>(ReInitActiveBoard);
         }
     }
 }

@@ -16,8 +16,6 @@ namespace SwipeMatch3.Gameplay
     {
         public List<TileAbstract> Tiles { get; private set; } = new List<TileAbstract>();
 
-        public int IndexInBoard { get; private set; }
-
         private TileAbstract Tile;
 
         private DiContainer _container;
@@ -29,12 +27,17 @@ namespace SwipeMatch3.Gameplay
             _container = container;
         }
         
-        public void Init(int indexInBoard, TileSetting[] tilesInRow)
+        public void Init(TileSetting[] tilesInRow)
         {
             if (Tile == null)
                 return;
 
-            IndexInBoard = indexInBoard;
+            if (Tiles.Count > 0)
+            {
+                ReInit(tilesInRow);
+                return;
+            }
+
             for (int i = 0; i < tilesInRow.Length; i++)
             {
                 TileAbstract newTile = _container.InstantiatePrefabForComponent<TileAbstract>(Tile, transform);
@@ -44,6 +47,16 @@ namespace SwipeMatch3.Gameplay
                 newTile.Init(i, tilesInRow[i]);
                 Tiles.Add(newTile);
             }
+        }
+
+        /// <summary>
+        /// Реиницилизация строки
+        /// </summary>
+        /// <param name="tilesSettings"></param>
+        private void ReInit(TileSetting[] tilesSettings)
+        {
+            for (int i = 0; i < tilesSettings.Length; i++)
+                Tiles[i].Init(i, tilesSettings[i]);
         }
 
         /// <summary>
@@ -71,13 +84,6 @@ namespace SwipeMatch3.Gameplay
             }
 
             return null;
-        }
-
-        public TileAbstract GetTile(int index)
-        {
-            if (index >= Tiles.Count)
-                return null;
-            return Tiles[index];
         }
     }
 }
