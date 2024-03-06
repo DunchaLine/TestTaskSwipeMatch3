@@ -932,10 +932,10 @@ PrefabInstance:
     - target: {fileID: -1327823164457195272, guid: 688a59c0f11b19643ba4a88352522c98, type: 3}
       propertyPath: _boardSettings
       value: 
-      objectReference: {fileID: 11400000, guid: a02b41f3356be304e853abb7f804dc4a, type: 2}
+      objectReference: {fileID: 11400000, guid: f49c188364853ec47b9b7e76bd9c40ad, type: 2}
     - target: {fileID: 6804262604292625687, guid: 688a59c0f11b19643ba4a88352522c98, type: 3}
       propertyPath: m_Name
-      value: Board
+      value: BoardFirstLevel
       objectReference: {fileID: 0}
     - target: {fileID: 7471131167881139270, guid: 688a59c0f11b19643ba4a88352522c98, type: 3}
       propertyPath: m_Pivot.x

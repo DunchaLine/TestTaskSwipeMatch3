@@ -11,7 +11,7 @@ namespace SwipeMatch3.Gameplay
     /// <summary>
     /// Класс тайла, который можно перемещать
     /// </summary>
-    public class MovableTile : TileAbstract, ITileMovable
+    public class MovableTile : TileAbstract, ITileMovable, ITileDestroyable
     {
         public bool IsInteractable { get; private set; }
 
@@ -34,6 +34,7 @@ namespace SwipeMatch3.Gameplay
         /// </summary>
         public void OnStartSwapUpDown()
         {
+            Debug.Log($"subscribing up down tile: {TileSetting.TileName}");
             _signalBus.Subscribe<GameSignals.OnSwappingSpritesUpDownSignal>(ChangeInteractable);
         }
 
@@ -73,6 +74,15 @@ namespace SwipeMatch3.Gameplay
             TileSetting = newSetting;
             SetNewSprite(newSetting.Sprite);
             UpdateAlfaInColor(newSetting.Visible ? 255 : 0);
+        }
+
+        public void Destroy()
+        {
+            if (TileSetting.Visible == false)
+                return;
+
+            TileSetting tileSetting = (TileSetting) ScriptableObject.CreateInstance(typeof(TileSetting));
+            SetNewSetting(tileSetting);
         }
 
         public override void Interact()

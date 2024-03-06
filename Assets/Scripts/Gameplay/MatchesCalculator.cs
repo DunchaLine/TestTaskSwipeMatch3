@@ -1,9 +1,11 @@
 using SwipeMatch3.Gameplay.Settings;
+using SwipeMatch3.Gameplay.Signals;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Unity.Mathematics;
 using UnityEngine;
+using Zenject;
 using static SwipeMatch3.Gameplay.BoardAbstract;
 
 namespace SwipeMatch3.Gameplay
@@ -22,16 +24,16 @@ namespace SwipeMatch3.Gameplay
 
         public readonly string tileName;
 
-        //public readonly List<TileInBoard> tiles;
+        public readonly List<TileInBoard> tiles;
 
-        public MatchInfo(int startX, int startY, int count, bool isHorizontal, string tileName)//List<TileInBoard> tiles)
+        public MatchInfo(int startX, int startY, int count, bool isHorizontal, string tileName, List<TileInBoard> tiles)
         {
             this.startX = startX;
             this.startY = startY;
             this.count = count;
             this.isHorizontal = isHorizontal;
             this.tileName = tileName;
-            //this.tiles = tiles;
+            this.tiles = tiles;
 
             if (isHorizontal)
                 end = startX + count;
@@ -48,6 +50,7 @@ namespace SwipeMatch3.Gameplay
         private readonly BoardAbstract _board;
 
         private List<SpecialCase> _specialCases = new List<SpecialCase>();
+        private SignalBus _signalBus;
 
         public MatchesCalculator(BoardAbstract board)
         {
@@ -57,11 +60,12 @@ namespace SwipeMatch3.Gameplay
             _boardWidth = board.Rows[0].Tiles.Count;
         }
 
-        [Zenject.Inject]
-        private void Init(List<SpecialCase> cases)
+        [Inject]
+        private void Init(List<SpecialCase> cases, SignalBus signalBus)
         {
             if (_specialCases.Count == 0)
                 _specialCases = cases;
+            _signalBus = signalBus;
         }
 
         public void FindMatches()
@@ -100,8 +104,41 @@ namespace SwipeMatch3.Gameplay
                 }
             }
 
-            foreach (var matchInfo in matchesInfo) 
-                CheckSpecialCases(matchInfo);
+            // ищем совпадения частных случаев в board
+            var specialCasesWithTiles = new Dictionary<SpecialCase, List<TileInBoard>>();
+            foreach (var matchInfo in matchesInfo)
+            {
+                // проверяем среди уже найденных частных случаев
+                bool isFind = false;
+                HashSet<TileInBoard> matchesTiles = new HashSet<TileInBoard>(matchInfo.tiles);
+                foreach (var specialCaseWithTiles in specialCasesWithTiles)
+                {
+                    // если тайлы в матче содержатся в тайлах в уже найденном частном случае => пропуск
+                    HashSet<TileInBoard> specialCaseTiles = new HashSet<TileInBoard>(specialCaseWithTiles.Value);
+                    if (matchesTiles.IsProperSubsetOf(specialCaseTiles))
+                    {
+                        isFind = true;
+                        break;
+                    }
+                }
+
+                if (isFind)
+                    continue;
+
+                var newCases = GetSpecialCases(matchInfo);
+                foreach (var newCase in newCases)
+                    specialCasesWithTiles.TryAdd(newCase.Key, newCase.Value);
+            }
+
+            List<TileInBoard> tilesToClear = new List<TileInBoard>();
+            foreach (var specialCaseWithTiles in specialCasesWithTiles)
+                tilesToClear.AddRange(specialCaseWithTiles.Value);
+
+            foreach (var matchInfo in matchesInfo)
+                tilesToClear.AddRange(matchInfo.tiles);
+
+            _signalBus.Fire(new GameSignals.ClearTiles(tilesToClear));
+            // очищать тайлы при помощи запуска сигнала на очистку, в который передавать список с тайлами, которые нужно сделать прозрачными
         }
 
         /// <summary>
@@ -115,14 +152,15 @@ namespace SwipeMatch3.Gameplay
         private MatchInfo GetMatch(int x, int y, string tileName, bool isHorizontal)
         {
             int matchesCount;
+            List<TileInBoard> tiles = new List<TileInBoard>();
             if (isHorizontal)
-                matchesCount = GetHorizontalMatchCount(x, y, tileName, out var tiles);
+                matchesCount = GetHorizontalMatchCount(x, y, tileName, out tiles);
             else
-                matchesCount = GetVerticalMatchCount(x, y, tileName, out var tiles);
+                matchesCount = GetVerticalMatchCount(x, y, tileName, out tiles);
 
             // если в матче 3 или больше тайлов с одним именем
             if (matchesCount >= 3)
-                return new MatchInfo(x, y, matchesCount, isHorizontal, tileName);
+                return new MatchInfo(x, y, matchesCount, isHorizontal, tileName, tiles);
 
             return null;
         }
@@ -179,16 +217,21 @@ namespace SwipeMatch3.Gameplay
             return count;
         }
 
-        private void CheckSpecialCases(MatchInfo matchInfo)
+        private Dictionary<SpecialCase, List<TileInBoard>> GetSpecialCases(MatchInfo matchInfo)
         {
-            var specialCases = new List<SpecialCase>();
+            Dictionary<SpecialCase, List<TileInBoard>> specialCaseWithTilesToClear = 
+                new Dictionary<SpecialCase, List<TileInBoard>>();
             foreach (var specialCase in _specialCases)
             {
                 if (specialCase.IsCaseOnBoard(matchInfo, _tilesInBoard, out var tilesToClear))
-                    specialCases.Add(specialCase);
+                {
+                    tilesToClear.AddRange(matchInfo.tiles);
+                    specialCaseWithTilesToClear.TryAdd(specialCase, tilesToClear);
+
+                }
             }
-            
-            // очищать тайлы при помощи запуска сигнала на очистку, в который передавать список с тайлами, которые нужно сделать прозрачными
+
+            return specialCaseWithTilesToClear;
         }
     }
 }

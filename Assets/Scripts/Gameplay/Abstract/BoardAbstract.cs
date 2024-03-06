@@ -1,11 +1,12 @@
 using SwipeMatch3.Gameplay.Interfaces;
 using SwipeMatch3.Gameplay.Settings;
-
+using SwipeMatch3.Gameplay.Signals;
 using System.Collections.Generic;
 using System.Linq;
 
 using Unity.Mathematics;
 using UnityEngine;
+using Zenject;
 
 namespace SwipeMatch3.Gameplay
 {
@@ -40,7 +41,9 @@ namespace SwipeMatch3.Gameplay
 
         public int BoardHeight { get; private set; }
 
-        [Zenject.Inject]
+        private SignalBus _signalBus;
+
+        [Inject]
         private void Init(RowAbstract row, Zenject.DiContainer container)
         {
             if (_boardSettings == null || _boardSettings.IsCorrect() == false)
@@ -60,8 +63,15 @@ namespace SwipeMatch3.Gameplay
 
             BoardWidth = Rows[0].Tiles.Count;
             BoardHeight = Rows.Count;
+            _signalBus = container.Resolve<SignalBus>();
+            _signalBus.Subscribe<GameSignals.ClearTiles>(SetTilesInvisible);
 
             SetTilesCoordinates();
+        }
+
+        private int GetColumnsCount()
+        {
+            return Rows[0].Tiles.Count;
         }
 
         /// <summary>
@@ -99,6 +109,28 @@ namespace SwipeMatch3.Gameplay
             }
 
             return -1;
+        }
+
+        public void SetTilesInvisible(GameSignals.ClearTiles signal)
+        {
+            Debug.Log($"tilesToClear: {signal.tilesToClear.Count}");
+
+            List<int> columnsToCheck = new List<int>();
+            if (signal == null || signal.tilesToClear == null || signal.tilesToClear.Count == 0)
+                return;
+
+            foreach (var tile in signal.tilesToClear)
+            {
+                if (tile.Tile == null || tile.Tile.TryGetComponent(out ITileDestroyable destroyable) == false)
+                    continue;
+
+                destroyable.Destroy();
+                if (columnsToCheck.Contains(tile.Tile.IndexInRow) == false)
+                    columnsToCheck.Add(tile.Tile.IndexInRow);
+            }
+
+            if (columnsToCheck.Count > 0)
+                _signalBus.Fire(new GameSignals.NormalizeTilesOnBoardSignal(columnsToCheck));
         }
 
         /// <summary>

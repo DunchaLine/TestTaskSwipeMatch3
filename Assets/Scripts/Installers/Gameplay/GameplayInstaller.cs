@@ -28,6 +28,7 @@ namespace SwipeMatch3.Gameplay.Installers
             Container.DeclareSignal<GameSignals.SwapSpritesUpDownSignal>();
             Container.DeclareSignal<GameSignals.OnSwappingSpritesUpDownSignal>();
             Container.DeclareSignal<GameSignals.FindMatches>();
+            Container.DeclareSignal<GameSignals.ClearTiles>();
 
             // установка сигналов в определенные методы
             Container.BindInterfacesAndSelfTo<GameplayHandler>().AsSingle();
@@ -35,7 +36,6 @@ namespace SwipeMatch3.Gameplay.Installers
             Container.BindSignal<GameSignals.SwapSpritesUpDownSignal>().ToMethod<GameplayHandler>(g => g.SwapSpritesUpToDown).FromResolve();
 
             Container.BindInterfacesAndSelfTo<BoardsHandler>().AsSingle();
-            //Container.Bind<MatchesCalculator>().AsSingle();
 
             Container.BindInterfacesAndSelfTo<TileAbstract>().FromInstance(_tilePrefab).AsSingle();
             Container.BindInterfacesAndSelfTo<RowAbstract>().FromInstance(_rowPrefab).AsSingle();

@@ -28,6 +28,8 @@ namespace SwipeMatch3.Gameplay
 
         private List<int> ColumnsChecking { get; set; } = new List<int>();
 
+        private List<UniTask> tasksToDropdown = new List<UniTask>();
+
         [Inject]
         private void Init(SignalBus signalBus, List<BoardAbstract> boards, DiContainer container)
         {
@@ -92,8 +94,13 @@ namespace SwipeMatch3.Gameplay
         /// </summary>
         private async void NormalizeTilesOnBoard(GameSignals.NormalizeTilesOnBoardSignal signal)
         {
-            List<int> columnsToCheck = new List<int>();
-            foreach (var columnIndex in signal.ColumnsIndexes)
+            await UniTask.WhenAll(tasksToDropdown);
+
+            //List<int> columnsToCheck = new List<int>();
+            tasksToDropdown = new List<UniTask>();
+
+            var columns = signal.ColumnsIndexes.Distinct().ToList();
+            foreach (var columnIndex in columns)
             {
                 if (columnIndex < 0)
                     continue;
@@ -109,14 +116,15 @@ namespace SwipeMatch3.Gameplay
                 if (ColumnsChecking.Contains(columnIndex))
                     continue;
 
-                columnsToCheck.Add(columnIndex);
+                //columnsToCheck.Add(columnIndex);
+                tasksToDropdown.Add(MoveTilesDownTask(columnIndex));
             }
 
-            List<UniTask> tasks = new List<UniTask>();
-            foreach (var columnIndex in columnsToCheck)
-                tasks.Add(MoveTilesDownTask(columnIndex));
+            /*foreach (var columnIndex in columnsToCheck)
+                tasksToDropdown.Add(MoveTilesDownTask(columnIndex));*/
 
-            await UniTask.WhenAll(tasks);
+            await UniTask.WhenAll(tasksToDropdown);
+            tasksToDropdown = new List<UniTask>();
             ColumnsChecking = new List<int>();
             _signalBus.Fire<GameSignals.FindMatches>();
         }
@@ -148,12 +156,15 @@ namespace SwipeMatch3.Gameplay
                 // пока можно, опускаем тайл
                 while (CanMoveDown(currentTile, upperTile))
                 {
+                    Debug.Log($"up down column");
+
                     var currentImovable = currentTile.Tile.GetComponent<ITileMovable>();
                     var upperImovable = upperTile.Tile.GetComponent<ITileMovable>();
 
                     if (currentImovable == null || upperImovable == null)
                         break;
-
+                    else if (currentImovable.TileSetting.Visible == false && upperImovable.TileSetting.Visible == false)
+                        break;
                     // если тайлы ещё не подписаны на события во время их движения вниз
                     if (tilesMovedDown.Contains(currentImovable) == false)
                     {
@@ -373,7 +384,7 @@ namespace SwipeMatch3.Gameplay
             return true;
         }
 
-        public void GetTilesToSetInvisible()
+        private void GetTilesToSetInvisible()
         {
             _matchesCalculator.FindMatches();
         }
