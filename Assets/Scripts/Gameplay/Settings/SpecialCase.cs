@@ -25,19 +25,6 @@ namespace SwipeMatch3.Gameplay.Settings
         }
 
         /// <summary>
-        /// Возвращает количество тайлов в фигуре
-        /// </summary>
-        /// <returns></returns>
-        public int GetVisibleTiles()
-        {
-            int tilesCount = 0;
-            foreach (var row in Rows)
-                tilesCount += row.IsVisibleTile.Where(g => g == true).Count();
-
-            return tilesCount;
-        }
-
-        /// <summary>
         /// Есть ли частный случай на board
         /// </summary>
         /// <param name="matchInfo"></param>

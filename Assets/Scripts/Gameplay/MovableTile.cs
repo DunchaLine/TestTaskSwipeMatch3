@@ -18,9 +18,25 @@ namespace SwipeMatch3.Gameplay
         private SignalBus _signalBus;
 
         [Inject]
-        public void Init(SignalBus signalBus)
+        private void Init(SignalBus signalBus)
         {
             _signalBus = signalBus;
+        }
+
+        private void SetNewSprite(Sprite sprite)
+        {
+            if (sprite == null)
+                return;
+
+            SpriteRenderer.sprite = sprite;
+            Image.sprite = sprite;
+        }
+
+        private void UpdateAlfaInColor(float alfa)
+        {
+            color = new Color(color.r, color.g, color.b, alfa);
+            SpriteRenderer.color = color;
+            Image.color = color;
         }
 
         public override void Init(int index, TileSetting tileSetting)
@@ -34,7 +50,6 @@ namespace SwipeMatch3.Gameplay
         /// </summary>
         public void OnStartSwapUpDown()
         {
-            Debug.Log($"subscribing up down tile: {TileSetting.TileName}");
             try
             {
                 _signalBus.Subscribe<GameSignals.OnSwappingSpritesUpDownSignal>(DisableInteractable);
@@ -60,22 +75,6 @@ namespace SwipeMatch3.Gameplay
         public void EnableIntaractable()
         {
             IsInteractable = true;
-        }
-
-        private void SetNewSprite(Sprite sprite)
-        {
-            if (sprite == null)
-                return;
-
-            SpriteRenderer.sprite = sprite;
-            Image.sprite = sprite;
-        }
-
-        private void UpdateAlfaInColor(float alfa)
-        {
-            color = new Color(color.r, color.g, color.b, alfa);
-            SpriteRenderer.color = color;
-            Image.color = color;
         }
 
         public void SetNewSetting(TileSetting newSetting)

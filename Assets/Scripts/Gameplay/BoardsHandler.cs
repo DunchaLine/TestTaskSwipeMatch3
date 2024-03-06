@@ -26,12 +26,7 @@ namespace SwipeMatch3.Gameplay
 
         private DiContainer _container;
 
-        private List<int> ColumnsChecking { get; set; } = new List<int>();
-
-        //private List<(UniTask<List<ITileMovable>>, int)> tasksToDropdownWithColumnIndex = new List<(UniTask<List<ITileMovable>>, int)>();
         private Dictionary<UniTask, (CancellationTokenSource, int)> tasksToDropdown = new Dictionary<UniTask, (CancellationTokenSource, int)>();
-
-        private bool _isTilesChanged = false;
 
         [Inject]
         private void Init(SignalBus signalBus, List<BoardAbstract> boards, DiContainer container)
@@ -64,6 +59,9 @@ namespace SwipeMatch3.Gameplay
             CheckBoardOnInit();
         }
 
+        /// <summary>
+        /// Вызов нормализации поля при старте уровня
+        /// </summary>
         private void CheckBoardOnInit()
         {
             var columnsIndexes = new List<int>();
@@ -84,8 +82,13 @@ namespace SwipeMatch3.Gameplay
             _signalBus.Subscribe<GameSignals.ReInitBoardSignal>(ReInitActiveBoard);
         }
 
+        /// <summary>
+        /// Установка калькулятора матчей
+        /// </summary>
+        /// <returns></returns>
         private async UniTask SetMatchCalculator()
         {
+            // пока активный board не был проинициализирован, ожидаем
             while (ActiveBoard.Rows.Count == 0)
                 await UniTask.NextFrame();
 
@@ -106,18 +109,13 @@ namespace SwipeMatch3.Gameplay
         /// </summary>
         /// <param name="columnIndex"></param>
         /// <returns></returns>
-        public List<TileInBoard> GetTilesInColumn(int columnIndex)
+        private List<TileInBoard> GetTilesInColumn(int columnIndex)
         {
             List<TileInBoard> tilesInBoard = new List<TileInBoard>();
             for (int x = 0; x < ActiveBoard.BoardHeight; x++)
                 tilesInBoard.Add(ActiveBoard.GetTileByCoordinates(columnIndex, x));
 
             return tilesInBoard;
-        }
-
-        public int GetTileColumnIndex(ITileMovable tileMovable)
-        {
-            return ActiveBoard.GetTileColumnIndex(tileMovable);
         }
 
         /// <summary>
@@ -205,13 +203,14 @@ namespace SwipeMatch3.Gameplay
                     tasksToDropdown.Remove(tmpTask);
             }
 
-            ColumnsChecking = new List<int>();
+            // пока все задачи не завершены => ожидаем
             while (tasksToDropdown.Count > 0)
             {
                 Debug.Log($"waiting while tasksToDropdown count == 0");
                 await UniTask.NextFrame();
             }
 
+            // отправляем сигнал на поиск матчей
             Debug.Log($"firing to find matches");
             _signalBus.Fire<GameSignals.FindMatches>();
         }
@@ -236,7 +235,6 @@ namespace SwipeMatch3.Gameplay
                     if (token.IsCancellationRequested)
                         return;
 
-                    //int index = 0;
                     TileInBoard currentTile = tilesInColumn[startIndex - 1];
                     TileInBoard upperTile = tilesInColumn[startIndex];
                     // пока можно, пытаемся опустить тайл
@@ -251,20 +249,6 @@ namespace SwipeMatch3.Gameplay
 
                         if (currentMovable == null || upperMovable == null)
                             break;
-
-                        // если и текущий и тайл выше невидимые
-                        /*if (currentMovable.TileSetting.Visible == false && upperMovable.TileSetting.Visible == false)
-                        {
-                            // поднимаемся на один тайл выше
-                            index++;
-                            if (index + 1 > tilesInColumn.Count)
-                                break;
-
-                            currentTile = tilesInColumn[index];
-                            upperTile = tilesInColumn[index + 1];
-
-                            continue;
-                        }*/
 
                         movableTiles.Add(currentMovable);
                         movableTiles.Add(upperMovable);
@@ -281,19 +265,15 @@ namespace SwipeMatch3.Gameplay
                         _signalBus.Fire(new GameSignals.OnSwappingSpritesUpDownSignal());
 
                         await UniTask.WaitForSeconds(.2f);
-                        // так как 
-                        /*if (IsEndSwapUpDown(upperTile))
-                            upperMovable.OnEndSwapUpDown();*/
+
                         if (IsEndSwapUpDown(currentTile))
                             currentMovable.OnEndSwapUpDown();
                         if (IsEndSwapUpDown(upperTile))
                             upperMovable.OnEndSwapUpDown();
 
-                        // тк произошёл свап, 
+                        // тк произошёл свап, меняем currentTile на upperTile, а upperTile меняем на тайл над ним
                         currentTile = upperTile;
                         upperTile = ActiveBoard.GetTileByCoordinates(upperTile.Coordinates.x, upperTile.Coordinates.y + 1);
-                        /*currentTile = upperTile;
-                        upperTile = ActiveBoard.GetTileByCoordinates(upperTile.Coordinates.x, );*/
                     }
                 }
             }
@@ -302,13 +282,17 @@ namespace SwipeMatch3.Gameplay
                 foreach (var movableTile in movableTiles)
                     movableTile.OnEndSwapUpDown();
             }
-
         }
 
 
-
+        /// <summary>
+        /// Закончен ли свап вверх/вниз для тайла
+        /// </summary>
+        /// <param name="tileInBoard"></param>
+        /// <returns></returns>
         private bool IsEndSwapUpDown(TileInBoard tileInBoard)
         {
+            // если тайл невидимый - true
             if (tileInBoard.Tile.TileSetting.Visible == false)
                 return true;
 
@@ -456,6 +440,23 @@ namespace SwipeMatch3.Gameplay
             return firstIndex == secondIndex;
         }
 
+        private void FindMatches()
+        {
+            _matchesCalculator.FindMatches();
+        }
+
+        private void SettingActiveBoard()
+        {
+            foreach (var task in tasksToDropdown)
+                task.Value.Item1.Cancel();
+
+            tasksToDropdown = new Dictionary<UniTask, (CancellationTokenSource, int)>();
+
+            ActiveBoard.InitBoard();
+            SetMatchCalculator().Forget();
+            CheckBoardOnInit();
+        }
+
         /// <summary>
         /// Являются ли тайлы соседями
         /// </summary>
@@ -494,9 +495,14 @@ namespace SwipeMatch3.Gameplay
             return true;
         }
 
-        private void FindMatches()
+        /// <summary>
+        /// Получение индекса столбца, в котором находится тайл
+        /// </summary>
+        /// <param name="tileMovable"></param>
+        /// <returns></returns>
+        public int GetTileColumnIndex(ITileMovable tileMovable)
         {
-            _matchesCalculator.FindMatches();
+            return ActiveBoard.GetTileColumnIndex(tileMovable);
         }
 
         public void SetNextBoardActive()
@@ -531,18 +537,6 @@ namespace SwipeMatch3.Gameplay
         public void ReInitActiveBoard()
         {
             SettingActiveBoard();
-        }
-
-        private void SettingActiveBoard()
-        {
-            foreach (var task in tasksToDropdown)
-                task.Value.Item1.Cancel();
-
-            tasksToDropdown = new Dictionary<UniTask, (CancellationTokenSource, int)>();
-
-            ActiveBoard.InitBoard();
-            SetMatchCalculator().Forget();
-            CheckBoardOnInit();
         }
 
         public void Dispose()
