@@ -89,11 +89,21 @@ namespace SwipeMatch3.Gameplay
             _signalBus.Subscribe<GameSignals.ClearTiles>(SetTilesInvisible);
         }
 
+        public bool IsInited()
+        {
+            foreach (var row in Rows)
+                if (row.IsInited() == false)
+                    return false;
+
+            return true;
+        }
+
         /// <summary>
         /// Реинициализация board
         /// </summary>
         private void ReInit()
         {
+            SetBoardInactive();
             for (int i = 0; i < Rows.Count; i++)
                 Rows[i].Init(_boardSettings.Rows[i].TilesInRow);
             SetBoardActive();
@@ -222,8 +232,20 @@ namespace SwipeMatch3.Gameplay
         public void SetBoardInactive()
         {
             transform.gameObject.SetActive(false);
-            if (_signalBus != null)
-                _signalBus.Unsubscribe<GameSignals.ClearTiles>(SetTilesInvisible);
+            Unsubscribe();
+        }
+
+        private void Unsubscribe()
+        {
+            if (_signalBus == null)
+                return;
+
+            _signalBus.TryUnsubscribe<GameSignals.ClearTiles>(SetTilesInvisible);
+        }
+
+        public void OnDestroy()
+        {
+            Unsubscribe();
         }
     }
 }

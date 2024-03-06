@@ -75,6 +75,11 @@ namespace SwipeMatch3.Gameplay.Signals
 
         }
 
+        public class BoardInitedSignal
+        {
+
+        }
+
         public class ClearTiles
         {
             public readonly List<BoardAbstract.TileInBoard> tilesToClear;

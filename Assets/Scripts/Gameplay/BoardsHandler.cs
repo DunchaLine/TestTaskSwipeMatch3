@@ -22,15 +22,16 @@ namespace SwipeMatch3.Gameplay
 
         private SignalBus _signalBus;
 
-        private MatchesCalculator _matchesCalculator;
+        private IMatchesCalcularable _matchesCalculator;
 
         private DiContainer _container;
 
         private List<int> ColumnsChecking { get; set; } = new List<int>();
 
-        private List<UniTask> tasksToDropdown = new List<UniTask>();
+        //private List<(UniTask<List<ITileMovable>>, int)> tasksToDropdownWithColumnIndex = new List<(UniTask<List<ITileMovable>>, int)>();
+        private Dictionary<UniTask, (CancellationTokenSource, int)> tasksToDropdown = new Dictionary<UniTask, (CancellationTokenSource, int)>();
 
-        private CancellationTokenSource _cancellationToken;
+        private bool _isTilesChanged = false;
 
         [Inject]
         private void Init(SignalBus signalBus, List<BoardAbstract> boards, DiContainer container)
@@ -59,12 +60,16 @@ namespace SwipeMatch3.Gameplay
                 board.SetBoardInactive();
             }
 
-            _cancellationToken = new CancellationTokenSource();
             SetMatchCalculator().Forget();
-            // TODO: временно, перенести в UI, который будет запускать нормализацию по кнопке на старте игры
+            CheckBoardOnInit();
+        }
+
+        private void CheckBoardOnInit()
+        {
             var columnsIndexes = new List<int>();
             for (int i = 0; i < ActiveBoard.BoardWidth; i++)
                 columnsIndexes.Add(i);
+
             _signalBus.Fire(new GameSignals.NormalizeTilesOnBoardSignal(columnsIndexes));
         }
 
@@ -74,7 +79,7 @@ namespace SwipeMatch3.Gameplay
         private void SubscribeSignals()
         {
             _signalBus.Subscribe<GameSignals.NormalizeTilesOnBoardSignal>(NormalizeTilesOnBoard);
-            _signalBus.Subscribe<GameSignals.FindMatches>(GetTilesToSetInvisible);
+            _signalBus.Subscribe<GameSignals.FindMatches>(FindMatches);
             _signalBus.Subscribe<GameSignals.ChangeBoardSignal>(SetNextBoardActive);
             _signalBus.Subscribe<GameSignals.ReInitBoardSignal>(ReInitActiveBoard);
         }
@@ -84,13 +89,14 @@ namespace SwipeMatch3.Gameplay
             while (ActiveBoard.Rows.Count == 0)
                 await UniTask.NextFrame();
 
+            // TODO: добавить возможность выбора типа калькулятора
             _matchesCalculator = new MatchesCalculator(ActiveBoard);
 
-            var matchesCalculator = _container.TryResolve<MatchesCalculator>();
+            var matchesCalculator = _container.TryResolve<IMatchesCalcularable>();
             if (matchesCalculator != null)
-                _container.Rebind<MatchesCalculator>().FromInstance(_matchesCalculator).AsCached();
+                _container.Rebind<IMatchesCalcularable>().FromInstance(_matchesCalculator).AsCached();
             else
-                _container.Bind<MatchesCalculator>().FromInstance(_matchesCalculator).AsCached();
+                _container.Bind<IMatchesCalcularable>().FromInstance(_matchesCalculator).AsCached();
 
             _container.Inject(_matchesCalculator);
         }
@@ -115,36 +121,98 @@ namespace SwipeMatch3.Gameplay
         }
 
         /// <summary>
+        /// Попытка удалить таску, обрабатывающую столбец с индексом columnIndex
+        /// </summary>
+        /// <param name="columnIndex"></param>
+        /// <param name="findedUniTaskToken"></param>
+        /// <returns></returns>
+        private bool TryRemoveUniTaskOnColumn(int columnIndex, out CancellationTokenSource findedUniTaskToken)
+        {
+            foreach (var dropdownTask in tasksToDropdown)
+            {
+                // если таска сейчас не запущена - пропуск
+                if (dropdownTask.Key.Status != UniTaskStatus.Pending)
+                    continue;
+
+                // если индекс столбца в таске не соответствует искомому - пропуск
+                if (columnIndex != dropdownTask.Value.Item2)
+                    continue;
+
+                // возвращаем токен и true
+                findedUniTaskToken = dropdownTask.Value.Item1;
+                tasksToDropdown.Remove(dropdownTask.Key);
+                return true;
+            }
+
+            findedUniTaskToken = new CancellationTokenSource();
+            return false;
+        }
+
+        private UniTask CreateUniTaskDefer(List<TileInBoard> tiles, int columnIndex, CancellationToken token)
+        {
+            return UniTask.Defer(() => MoveTilesDownTask(tiles, token));
+        }
+
+        /// <summary>
         /// Нормализация тайлов на board
         /// </summary>
         private async void NormalizeTilesOnBoard(GameSignals.NormalizeTilesOnBoardSignal signal)
         {
-            await UniTask.WhenAll(tasksToDropdown);
-            tasksToDropdown = new List<UniTask>();
-
-            var columns = signal.ColumnsIndexes.Distinct().ToList();
-            foreach (var columnIndex in columns)
+            List<int> columnsIndexes = signal.ColumnsIndexes.Distinct().ToList();
+            var tmpTasks = new List<UniTask>();
+            UniTaskCompletionSource tmps = new UniTaskCompletionSource();
+            foreach (var columnIndex in columnsIndexes)
             {
                 if (columnIndex < 0)
                     continue;
 
-                // сохраняем список всех тайлов в одном столбце
+                // получаем список всех тайлов в столбце под индексом columnIndex
                 List<TileInBoard> tilesInColumn = GetTilesInColumn(columnIndex);
+                CancellationTokenSource token = new CancellationTokenSource();
 
-                // если в текущем столбце нет "висящих" тайлов => пропуск
-                if (IsTileColumnNeedToNormalize(tilesInColumn) == false)
+                CancellationTokenSource findedToken;
+
+                // если столбец не надо нормализовывать
+                if (IsTileColumnNeedToNormalize(tilesInColumn, out int _) == false)
+                {
+                    // ищем таску с нормализацией столбца среди уже запущенных и останавливаем если она есть
+                    if (TryRemoveUniTaskOnColumn(columnIndex, out findedToken))
+                        findedToken.Cancel();
+
                     continue;
+                }
 
-                // если этот столбец уже проверяется => пропуск
-                if (ColumnsChecking.Contains(columnIndex))
+                // если столбец уже проверяется, нужно перезапустить проверку
+                if (TryRemoveUniTaskOnColumn(columnIndex, out findedToken))
+                {
+                    findedToken.Cancel();
+                    UniTask taskDefer = CreateUniTaskDefer(tilesInColumn, columnIndex, token.Token);
+                    tasksToDropdown.Add(taskDefer, new (token, columnIndex));
+                    tmpTasks.Add(taskDefer);
                     continue;
+                }
 
-                tasksToDropdown.Add(MoveTilesDownTask(columnIndex));
+                UniTask task = CreateUniTaskDefer(tilesInColumn, columnIndex, token.Token);
+                tasksToDropdown.Add(task, new (token, columnIndex));
+                tmpTasks.Add(task);
             }
 
-            await UniTask.WhenAll(tasksToDropdown);
-            tasksToDropdown = new List<UniTask>();
+            await UniTask.WhenAll(tasksToDropdown.Keys);
+            // удаляем из списка те таски, которые были пройдены на во время этого запуска нормализации
+            foreach (var tmpTask in tmpTasks)
+            {
+                if (tasksToDropdown.ContainsKey(tmpTask))
+                    tasksToDropdown.Remove(tmpTask);
+            }
+
             ColumnsChecking = new List<int>();
+            while (tasksToDropdown.Count > 0)
+            {
+                Debug.Log($"waiting while tasksToDropdown count == 0");
+                await UniTask.NextFrame();
+            }
+
+            Debug.Log($"firing to find matches");
             _signalBus.Fire<GameSignals.FindMatches>();
         }
 
@@ -154,104 +222,110 @@ namespace SwipeMatch3.Gameplay
         /// <param name="columnIndex"></param>
         /// <param name="token"></param>
         /// <returns></returns>
-        private async UniTask MoveTilesDownTask(int columnIndex, List<ITileMovable> tilesMovedDown = default)
+        private async UniTask MoveTilesDownTask(List<TileInBoard> tilesInColumn, CancellationToken token)
         {
-            ColumnsChecking.Add(columnIndex);
-
-            List<TileInBoard> tilesInColumn = GetTilesInColumn(columnIndex);
-            if (tilesMovedDown == null)
-                tilesMovedDown = new List<ITileMovable>();
-
-            // обновлять тайлы при каждом входе в UniTask
-            int index = 0;
-            foreach (var tileInColumn in tilesInColumn)
+            List<ITileMovable> movableTiles = new List<ITileMovable>();
+            try
             {
-                if (index + 1 >= tilesInColumn.Count)
-                    break;
-
-                // получаем текущий тайл и тайл над ним
-                var currentTile = tileInColumn;
-                var upperTile = tilesInColumn[index + 1];
-                // пока можно, опускаем тайл
-                while (CanMoveDown(currentTile, upperTile))
+                // пока надо опускать тайлы в столбце
+                while (IsTileColumnNeedToNormalize(tilesInColumn, out int startIndex))
                 {
-                    Debug.Log($"up down column");
-
-                    var currentImovable = currentTile.Tile.GetComponent<ITileMovable>();
-                    var upperImovable = upperTile.Tile.GetComponent<ITileMovable>();
-
-                    if (currentImovable == null || upperImovable == null)
+                    if (startIndex == 0)
                         break;
-                    else if (currentImovable.TileSetting.Visible == false && upperImovable.TileSetting.Visible == false)
-                        break;
-                    // если тайлы ещё не подписаны на события во время их движения вниз
-                    if (tilesMovedDown.Contains(currentImovable) == false)
-                    {
-                        tilesMovedDown.Add(currentImovable);
-                        currentImovable.OnStartSwapUpDown();
-                    }
 
-                    if (tilesMovedDown.Contains(upperImovable) == false)
-                    {
-                        tilesMovedDown.Add(upperImovable);
-                        upperImovable.OnStartSwapUpDown();
-                    }
-
-                    await UniTask.WaitForSeconds(.2f);
-
-                    if (_cancellationToken.IsCancellationRequested)
-                    {
-                        foreach (var tile in tilesMovedDown)
-                            tile.OnEndSwapUpDown();
-
-                        Debug.Log($"cancelling task");
+                    if (token.IsCancellationRequested)
                         return;
+
+                    //int index = 0;
+                    TileInBoard currentTile = tilesInColumn[startIndex - 1];
+                    TileInBoard upperTile = tilesInColumn[startIndex];
+                    // пока можно, пытаемся опустить тайл
+                    while (CanMoveDown(currentTile, upperTile))
+                    {
+                        if (token.IsCancellationRequested)
+                            return;
+
+                        // получаем IMovable для каждого тайла
+                        ITileMovable currentMovable = currentTile.Tile.GetComponent<ITileMovable>();
+                        ITileMovable upperMovable = upperTile.Tile.GetComponent<ITileMovable>();
+
+                        if (currentMovable == null || upperMovable == null)
+                            break;
+
+                        // если и текущий и тайл выше невидимые
+                        /*if (currentMovable.TileSetting.Visible == false && upperMovable.TileSetting.Visible == false)
+                        {
+                            // поднимаемся на один тайл выше
+                            index++;
+                            if (index + 1 > tilesInColumn.Count)
+                                break;
+
+                            currentTile = tilesInColumn[index];
+                            upperTile = tilesInColumn[index + 1];
+
+                            continue;
+                        }*/
+
+                        movableTiles.Add(currentMovable);
+                        movableTiles.Add(upperMovable);
+
+                        currentMovable.OnStartSwapUpDown();
+                        upperMovable.OnStartSwapUpDown();
+
+                        await UniTask.WaitForSeconds(.2f);
+                        if (token.IsCancellationRequested)
+                            return;
+                        // запускаем сигналы на сам свап, и на действия, необходимые во время свапа вверх/вниз
+                        _signalBus.Fire(
+                            new GameSignals.SwapSpritesUpDownSignal(currentMovable, upperMovable));
+                        _signalBus.Fire(new GameSignals.OnSwappingSpritesUpDownSignal());
+
+                        await UniTask.WaitForSeconds(.2f);
+                        // так как 
+                        /*if (IsEndSwapUpDown(upperTile))
+                            upperMovable.OnEndSwapUpDown();*/
+                        if (IsEndSwapUpDown(currentTile))
+                            currentMovable.OnEndSwapUpDown();
+                        if (IsEndSwapUpDown(upperTile))
+                            upperMovable.OnEndSwapUpDown();
+
+                        // тк произошёл свап, 
+                        currentTile = upperTile;
+                        upperTile = ActiveBoard.GetTileByCoordinates(upperTile.Coordinates.x, upperTile.Coordinates.y + 1);
+                        /*currentTile = upperTile;
+                        upperTile = ActiveBoard.GetTileByCoordinates(upperTile.Coordinates.x, );*/
                     }
-
-                    // запускаем сигналы на сам свап, и на действия, необходимые во время свапа вверх/вниз
-                    _signalBus.Fire(
-                        new GameSignals.SwapSpritesUpDownSignal(currentImovable, upperImovable));
-                    _signalBus.Fire(new GameSignals.OnSwappingSpritesUpDownSignal());
-
-                    await UniTask.WaitForSeconds(.2f);
-                    upperImovable.OnEndSwapUpDown();
-                    tilesMovedDown.Remove(upperImovable);
                 }
-                index++;
             }
-            
-            // если в столбце все ещё нужно опускать тайлы, запускаем заново
-            if (IsNeedToMoveDown(tilesInColumn))
-                await MoveTilesDownTask(columnIndex, tilesMovedDown);
+            finally
+            {
+                foreach (var movableTile in movableTiles)
+                    movableTile.OnEndSwapUpDown();
+            }
 
-            foreach (var tile in tilesMovedDown)
-                tile.OnEndSwapUpDown();
-
-            ColumnsChecking.Remove(columnIndex);
         }
 
-        /// <summary>
-        /// Нужно ли опускать тайлы
-        /// </summary>
-        /// <param name="tilesInColumn"></param>
-        /// <returns></returns>
-        private bool IsNeedToMoveDown(List<TileInBoard> tilesInColumn)
-        {
-            // если нет ни одного видимого объекта в столбце, его двигать не нужно
-            var firstVisible = tilesInColumn.FirstOrDefault(g => g.Tile.TileSetting.Visible);
-            if (firstVisible.Tile == null)
-                return false;
 
-            // сортируем столбцы по true
-            var sortedTiles = tilesInColumn.OrderByDescending(g => g.Tile.TileSetting.Visible).ToList();
-            for (int i = 0; i < sortedTiles.Count; i++)
+
+        private bool IsEndSwapUpDown(TileInBoard tileInBoard)
+        {
+            if (tileInBoard.Tile.TileSetting.Visible == false)
+                return true;
+
+            // если тайл находится в первой строке - true
+            if (tileInBoard.Coordinates.y == 0)
+                return true;
+
+            // проходим по каждом тайлу под тайлом в параметрах
+            for (int i = tileInBoard.Coordinates.y; i >= 0; i--)
             {
-                // если индекс не совпадает с позицией по оси, нужно ещё опускать тайлы
-                if (sortedTiles[i].Coordinates.y != i)
-                    return true;
+                // если хоть один тайл невидимый - false
+                var lowerTile = ActiveBoard.GetTileByCoordinates(tileInBoard.Coordinates.x, i);
+                if (lowerTile.Tile != null && lowerTile.Tile.TileSetting.Visible == false)
+                    return false;
             }
 
-            return false;
+            return true;
         }
 
         /// <summary>
@@ -263,6 +337,9 @@ namespace SwipeMatch3.Gameplay
         /// <returns></returns>
         private bool CanMoveDown(TileInBoard currentTile, TileInBoard upperTile)
         {
+            if (currentTile.Tile == null || upperTile.Tile == null)
+                return false;
+
             return currentTile.Tile.TileSetting.Visible == false && upperTile.Tile.TileSetting.Visible;
         }
 
@@ -271,13 +348,17 @@ namespace SwipeMatch3.Gameplay
         /// </summary>
         /// <param name="tiles"></param>
         /// <returns></returns>
-        private bool IsTileColumnNeedToNormalize(List<TileInBoard> tiles)
+        private bool IsTileColumnNeedToNormalize(List<TileInBoard> tiles, out int startIndex)
         {
+            startIndex = -1;
             if (tiles == null || tiles.Count < 2)
                 return false;
 
             if (tiles.Count == 2)
+            {
+                startIndex = 1;
                 return IsUpperTileHanging(tiles[0], tiles[1]);
+            }
 
             for (int i = 0; i <= tiles.Count - 2; i++)
             {
@@ -286,7 +367,10 @@ namespace SwipeMatch3.Gameplay
                 var currentTile = tiles[i];
                 var tileUpper = tiles[i + 1];
                 if (IsUpperTileHanging(currentTile, tileUpper))
+                {
+                    startIndex = i + 1;
                     return true;
+                }
             }
 
             return false;
@@ -410,23 +494,15 @@ namespace SwipeMatch3.Gameplay
             return true;
         }
 
-        private void GetTilesToSetInvisible()
+        private void FindMatches()
         {
             _matchesCalculator.FindMatches();
         }
 
-        // добавить метод для замены поля
-        // будет вызываться извне, по нажатии на кнопку
-        // нужно активировать следующее, после текущего, поле
-        // если поле последнее => активировать первое
         public void SetNextBoardActive()
         {
-            _cancellationToken.Cancel();
             if (Boards.Count == 1)
-            {
-                ActiveBoard.InitBoard();
-                return;
-            }
+                goto SettingActiveBoard;
 
             // получаем индекс активной board на сцене
             int activeBoardIndex = 0;
@@ -445,23 +521,34 @@ namespace SwipeMatch3.Gameplay
             else
                 activeBoardIndex++;
 
-            _cancellationToken = new CancellationTokenSource();
             ActiveBoard.SetBoardInactive();
             ActiveBoard = Boards[activeBoardIndex];
-            ActiveBoard.InitBoard();
-            SetMatchCalculator().Forget();
+
+            SettingActiveBoard:
+            SettingActiveBoard();
         }
 
         public void ReInitActiveBoard()
         {
-            _cancellationToken.Cancel();
+            SettingActiveBoard();
+        }
+
+        private void SettingActiveBoard()
+        {
+            foreach (var task in tasksToDropdown)
+                task.Value.Item1.Cancel();
+
+            tasksToDropdown = new Dictionary<UniTask, (CancellationTokenSource, int)>();
+
             ActiveBoard.InitBoard();
+            SetMatchCalculator().Forget();
+            CheckBoardOnInit();
         }
 
         public void Dispose()
         {
             _signalBus.Unsubscribe<GameSignals.NormalizeTilesOnBoardSignal>(NormalizeTilesOnBoard);
-            _signalBus.Unsubscribe<GameSignals.FindMatches>(GetTilesToSetInvisible);
+            _signalBus.Unsubscribe<GameSignals.FindMatches>(FindMatches);
             _signalBus.Unsubscribe<GameSignals.ChangeBoardSignal>(SetNextBoardActive);
             _signalBus.Unsubscribe<GameSignals.ReInitBoardSignal>(ReInitActiveBoard);
         }

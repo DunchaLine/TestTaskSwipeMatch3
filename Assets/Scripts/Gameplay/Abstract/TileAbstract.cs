@@ -23,11 +23,11 @@ namespace SwipeMatch3.Gameplay
 
         protected Color color;
 
-        private bool isInited = false;
+        public bool IsInited { get; private set; }
 
         public virtual void Init(int index, TileSetting tileSetting)
         {
-            if (isInited == false)
+            if (IsInited == false)
                 SettingTile();
             
             if (tileSetting == null)
@@ -60,7 +60,7 @@ namespace SwipeMatch3.Gameplay
             Image = GetComponent<Image>();
             SpriteRenderer = GetComponent<SpriteRenderer>();
             color = Image.color;
-            isInited = true;
+            IsInited = true;
         }
     }
 }

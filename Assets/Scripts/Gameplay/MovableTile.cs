@@ -35,7 +35,11 @@ namespace SwipeMatch3.Gameplay
         public void OnStartSwapUpDown()
         {
             Debug.Log($"subscribing up down tile: {TileSetting.TileName}");
-            _signalBus.Subscribe<GameSignals.OnSwappingSpritesUpDownSignal>(ChangeInteractable);
+            try
+            {
+                _signalBus.Subscribe<GameSignals.OnSwappingSpritesUpDownSignal>(DisableInteractable);
+            }
+            catch { }
         }
 
         /// <summary>
@@ -43,14 +47,19 @@ namespace SwipeMatch3.Gameplay
         /// </summary>
         public void OnEndSwapUpDown()
         {
-            _signalBus.TryUnsubscribe<GameSignals.OnSwappingSpritesUpDownSignal>(ChangeInteractable);
+            _signalBus.TryUnsubscribe<GameSignals.OnSwappingSpritesUpDownSignal>(DisableInteractable);
             IsInteractable = true;
         }
 
 
-        private void ChangeInteractable()
+        public void DisableInteractable()
         {
             IsInteractable = false;
+        }
+
+        public void EnableIntaractable()
+        {
+            IsInteractable = true;
         }
 
         private void SetNewSprite(Sprite sprite)

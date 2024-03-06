@@ -1,5 +1,6 @@
 using SwipeMatch3.Gameplay.Settings;
 using SwipeMatch3.Gameplay.Signals;
+using SwipeMatch3.Gameplay.Interfaces;
 using static SwipeMatch3.Gameplay.BoardAbstract;
 
 using System.Collections.Generic;
@@ -43,7 +44,7 @@ namespace SwipeMatch3.Gameplay
         }
     }
 
-    public class MatchesCalculator
+    public class MatchesCalculator : IMatchesCalcularable
     {
         private readonly TileInBoard[] _tilesInBoard;
         private readonly int _boardHeight;

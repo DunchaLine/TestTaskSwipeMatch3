@@ -49,6 +49,15 @@ namespace SwipeMatch3.Gameplay
             }
         }
 
+        public bool IsInited()
+        {
+            foreach (var tile in Tiles)
+                if (tile.IsInited == false)
+                    return false;
+
+            return true;
+        }
+
         /// <summary>
         /// Реиницилизация строки
         /// </summary>
