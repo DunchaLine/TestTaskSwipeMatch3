@@ -64,18 +64,9 @@ namespace SwipeMatch3.Gameplay
                 _specialCases = cases;
         }
 
-        public List<TileInBoard> FindMatches()
+        public void FindMatches()
         {
-            List<MatchInfo> horizontalMatchesInfo = new List<MatchInfo>();
-            List<MatchInfo> verticalMatchesInfo = new List<MatchInfo>();
-
-            /*var matches = new int[_boardHeight][];
-            for (int i = 0; i < matches.Length; i++)
-            {
-                matches[i] = new int[_boardWidth];
-                for (int j = 0; j < _boardWidth; j++)
-                    matches[i][j] = 0;
-            }*/
+            List<MatchInfo> matchesInfo = new List<MatchInfo>();
 
             // проходим по каждой координате в board
             for (int y = 0; y < _boardHeight; y++)
@@ -91,39 +82,59 @@ namespace SwipeMatch3.Gameplay
                         continue;
                     }
 
-                    if (horizontalMatchesInfo.FirstOrDefault(g => y == g.startY && x >= g.startX && x <= g.end) == null)//) == null)
-                    {
-                        int horizontalMatchesCount = GetHorizontalMatchCount(x, y, tileName, out var tiles);
-                        if (horizontalMatchesCount >= 3)
-                        {
-                            //Debug.Log($"find horizontal match by startPos: {x},{y} with count: {horizontalMatchesCount}");
-                            MatchInfo newMatchInfo = new MatchInfo(x, y, horizontalMatchesCount, true, tileName);//tiles);
-                            horizontalMatchesInfo.Add(newMatchInfo);
-                        }
-                    }
+                    // проверяем горизонтальный матч
+                    MatchInfo newMatchInfo = null;
+                    if (matchesInfo.FirstOrDefault(g => y == g.startY && x >= g.startX && x <= g.end) == null)
+                        newMatchInfo = GetMatch(x, y, tileName, true);
 
-                    if (verticalMatchesInfo.FirstOrDefault(g => x == g.startX && y >= g.startY && y <= g.end) == null)// && ) == null)
-                    {
-                        int verticalMatchesCount = GetVerticalMatchCount(x, y, tileName, out var tiles);
-                        if (verticalMatchesCount >= 3)
-                        {
-                            //Debug.Log($"find vertical match by startPos: {x},{y} with count: {verticalMatchesCount}");
-                            MatchInfo newMatchInfo = new MatchInfo(x, y, verticalMatchesCount, false, tileName);//tiles);
-                            verticalMatchesInfo.Add(newMatchInfo);
-                        }
-                    }
+                    if (newMatchInfo != null)
+                        matchesInfo.Add(newMatchInfo);
+
+                    // проверяем вертикальный матч
+                    newMatchInfo = null;
+                    if (matchesInfo.FirstOrDefault(g => x == g.startX && y >= g.startY && y <= g.end) == null)
+                        newMatchInfo = GetMatch(x, y, tileName, false);
+
+                    if (newMatchInfo != null)
+                        matchesInfo.Add(newMatchInfo);
                 }
             }
 
-            foreach (var matchInfo in horizontalMatchesInfo)
+            foreach (var matchInfo in matchesInfo) 
                 CheckSpecialCases(matchInfo);
+        }
 
-            foreach (var matchInfo in verticalMatchesInfo)
-                CheckSpecialCases(matchInfo);
+        /// <summary>
+        /// Получение матча по координатам
+        /// </summary>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        /// <param name="tileName"></param>
+        /// <param name="isHorizontal"></param>
+        /// <returns></returns>
+        private MatchInfo GetMatch(int x, int y, string tileName, bool isHorizontal)
+        {
+            int matchesCount;
+            if (isHorizontal)
+                matchesCount = GetHorizontalMatchCount(x, y, tileName, out var tiles);
+            else
+                matchesCount = GetVerticalMatchCount(x, y, tileName, out var tiles);
+
+            // если в матче 3 или больше тайлов с одним именем
+            if (matchesCount >= 3)
+                return new MatchInfo(x, y, matchesCount, isHorizontal, tileName);
 
             return null;
         }
 
+        /// <summary>
+        /// Получение длины матча по горизонтали
+        /// </summary>
+        /// <param name="startX"></param>
+        /// <param name="startY"></param>
+        /// <param name="tileName"></param>
+        /// <param name="matchedTiles"></param>
+        /// <returns></returns>
         private int GetHorizontalMatchCount(int startX, int startY, string tileName, out List<TileInBoard> matchedTiles)
         {
             matchedTiles = new List<TileInBoard>();
@@ -142,6 +153,14 @@ namespace SwipeMatch3.Gameplay
             return count;
         }
 
+        /// <summary>
+        /// Получение длины матча по вертикали
+        /// </summary>
+        /// <param name="startX"></param>
+        /// <param name="startY"></param>
+        /// <param name="tileName"></param>
+        /// <param name="matchedTiles"></param>
+        /// <returns></returns>
         private int GetVerticalMatchCount(int startX, int startY, string tileName, out List<TileInBoard> matchedTiles)
         {
             matchedTiles = new List<TileInBoard>();

@@ -119,7 +119,6 @@ namespace SwipeMatch3.Gameplay
             await UniTask.WhenAll(tasks);
             ColumnsChecking = new List<int>();
             _signalBus.Fire<GameSignals.FindMatches>();
-            // после нормализации поля, вызвать Signal на проверку всех возможных комбинаций на очистку тайлов
         }
 
         /// <summary>
@@ -377,8 +376,6 @@ namespace SwipeMatch3.Gameplay
         public void GetTilesToSetInvisible()
         {
             _matchesCalculator.FindMatches();
-            //var matchesCalculator = new MatchesCalculator(ActiveBoard);
-            //return matchesCalculator.FindMatches();
         }
 
         // добавить метод для замены поля

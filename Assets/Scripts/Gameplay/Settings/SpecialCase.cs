@@ -46,9 +46,14 @@ namespace SwipeMatch3.Gameplay.Settings
         /// <returns></returns>
         public bool IsCaseOnBoard(MatchInfo matchInfo, TileInBoard[] tilesInBoard, out List<TileInBoard> tilesToClear)
         {
-            // TODO: добавить проверку на единое количество тайлов в строках в SpecialCase
-            var rows = Rows;
             tilesToClear = new List<TileInBoard>();
+            if (IsCaseCorrect() == false)
+            {
+                Debug.LogError($"incorrect tiles count in case: {name}");
+                return false;
+            }
+
+            var rows = Rows;
             // у фигуры максимум может быть 4 состояния
             for (int i = 0; i < 4; i++)
             {
@@ -58,6 +63,27 @@ namespace SwipeMatch3.Gameplay.Settings
             }
 
             return false;
+        }
+
+        /// <summary>
+        /// Проверка на корректность частного случая
+        /// </summary>
+        /// <returns></returns>
+        private bool IsCaseCorrect()
+        {
+            // в частном случае должно быть одинаковое количество тайлов во всех строках
+
+            if (Rows == null || Rows.Length == 0)
+                return false;
+
+            int tilesInRowCount = Rows[0].IsVisibleTile.Length;
+            for (int i = 1; i < Rows.Length; i++)
+            {
+                if (tilesInRowCount != Rows[i].IsVisibleTile.Length)
+                    return false;
+            }
+
+            return true;
         }
 
         /// <summary>
@@ -253,6 +279,7 @@ namespace SwipeMatch3.Gameplay.Settings
             // если матч == вертикальным, для него свои проверки
             if (matchInfo.isHorizontal == false)
             {
+                // если фигура горизонтальная, а матч вертикальный => возвращаем false
                 if (IsVerticalCaseOnBoard(rows, matchInfo, tilesInBoard, out var verticalTilesToClear))
                 {
                     tilesToClear.AddRange(verticalTilesToClear);
@@ -267,7 +294,8 @@ namespace SwipeMatch3.Gameplay.Settings
                 return false;
             }
 
-            // если у фигуры максимальное число видимых тайлов > максимального числа в матче => return false
+            // если фигура вертикальная, а матч горизонтальный
+            // или количество тайлов не совпадает с количеством тайлов в матче => возвращаем false
             // TODO: добавить возможность комбинаций если в матче больше тайлов, чем в фигуре
             if (GetMaxLengthVisibleTilesInRow(rows) != matchInfo.count)
                 return false;
