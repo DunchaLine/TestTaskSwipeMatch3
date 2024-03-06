@@ -35,7 +35,11 @@ namespace SwipeMatch3.Gameplay
 
         private void Update()
         {
+#if UNITY_EDITOR
             if (Input.GetMouseButtonDown(0))
+#elif UNITY_ANDROID
+            if (Input.touchCount > 0 && Input.GetTouch(0).phase == TouchPhase.Began)
+#endif
             {
                 _currentTileUnderInput = null;
 
@@ -44,7 +48,11 @@ namespace SwipeMatch3.Gameplay
                     _currentTileUnderInput = tileUnder;
             }
 
+#if UNITY_EDITOR
             if (Input.GetMouseButtonUp(0))
+#elif UNITY_ANDROID
+            if (Input.touchCount > 0 && Input.GetTouch(0).phase == TouchPhase.Ended)
+#endif
             {
                 if (_currentTileUnderInput == null)
                     return;
@@ -57,6 +65,10 @@ namespace SwipeMatch3.Gameplay
                 _currentTileUnderInput = null;
             }
 
+            if (Input.touchCount > 0 && Input.GetTouch(0).phase == TouchPhase.Ended)
+            {
+
+            }
         }
 
         private void Swap(ITileMovable first, ITileMovable second)
