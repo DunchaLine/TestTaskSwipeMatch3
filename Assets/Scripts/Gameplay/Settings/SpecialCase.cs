@@ -7,7 +7,7 @@ using static SwipeMatch3.Gameplay.BoardAbstract;
 
 namespace SwipeMatch3.Gameplay.Settings
 {
-    [CreateAssetMenu(fileName = "SpecialCase", menuName = "SpecialCase/SpecialCases")]
+    [CreateAssetMenu(fileName = "SpecialCase", menuName = "SpecialCases/SpecialCase")]
     public class SpecialCase : ScriptableObject
     {
         [field: SerializeField]
