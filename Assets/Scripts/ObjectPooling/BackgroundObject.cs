@@ -30,7 +30,7 @@ namespace SwipeMatch3.ObjectPoolingBackground
 
             RectTransform.anchoredPosition = Vector3.zero;
             transform.position = Vector3.zero;
-            transform.localScale = Vector3.one;
+            transform.localScale = new Vector3(.2f, .2f, .2f);
         }
 
         [Zenject.Inject]

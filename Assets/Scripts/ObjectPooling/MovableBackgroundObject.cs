@@ -30,12 +30,10 @@ namespace SwipeMatch3.ObjectPoolingBackground
 
         public override void SetBehaviour(Vector2 destinationPoint)
         {
-            // TODO: вызывается 3 раза для каждого из объекта, пофиксить
             _direction = (destinationPoint - new Vector2(transform.position.x, transform.position.y)).normalized;
             _orthogonal = new Vector2(_direction.y, _direction.x);
             _speed = Random.Range(_movableSettings.MinSpeed, _movableSettings.MaxSpeed);
             _startTime = Time.time;
-            //Debug.Log($"direction: {_direction} with speed: {_speed}");
         }
 
         private void FixedUpdate()

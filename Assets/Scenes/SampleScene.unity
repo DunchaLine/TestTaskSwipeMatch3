@@ -266,12 +266,16 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8573194467702723601, guid: 688a59c0f11b19643ba4a88352522c98, type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8573194467702723601, guid: 688a59c0f11b19643ba4a88352522c98, type: 3}
       propertyPath: m_Spacing
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8573194467702723601, guid: 688a59c0f11b19643ba4a88352522c98, type: 3}
       propertyPath: m_ChildAlignment
-      value: 1
+      value: 7
       objectReference: {fileID: 0}
     - target: {fileID: 8573194467702723601, guid: 688a59c0f11b19643ba4a88352522c98, type: 3}
       propertyPath: m_ChildScaleWidth
@@ -547,8 +551,8 @@ MonoBehaviour:
   m_UiScaleMode: 1
   m_ReferencePixelsPerUnit: 100
   m_ScaleFactor: 1
-  m_ReferenceResolution: {x: 1280, y: 720}
-  m_ScreenMatchMode: 0
+  m_ReferenceResolution: {x: 720, y: 1980}
+  m_ScreenMatchMode: 1
   m_MatchWidthOrHeight: 1
   m_PhysicalUnit: 3
   m_FallbackScreenDPI: 96
@@ -1060,7 +1064,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8573194467702723601, guid: 688a59c0f11b19643ba4a88352522c98, type: 3}
       propertyPath: m_ChildAlignment
-      value: 1
+      value: 7
       objectReference: {fileID: 0}
     - target: {fileID: 8573194467702723601, guid: 688a59c0f11b19643ba4a88352522c98, type: 3}
       propertyPath: m_ChildScaleWidth
@@ -1208,7 +1212,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8573194467702723601, guid: 688a59c0f11b19643ba4a88352522c98, type: 3}
       propertyPath: m_ChildAlignment
-      value: 1
+      value: 7
       objectReference: {fileID: 0}
     - target: {fileID: 8573194467702723601, guid: 688a59c0f11b19643ba4a88352522c98, type: 3}
       propertyPath: m_ChildScaleWidth
