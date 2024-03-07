@@ -18,6 +18,10 @@ namespace SwipeMatch3.Gameplay
             _boardsHandler = boardsHandler;
         }
 
+        /// <summary>
+        /// Свайп тайлов сверху вниз
+        /// </summary>
+        /// <param name="swapUpDownSignal"></param>
         public void SwapSpritesUpToDown(GameSignals.SwapSpritesUpDownSignal swapUpDownSignal)
         {
             ITileMovable downElement = swapUpDownSignal.DownElement;
@@ -32,6 +36,10 @@ namespace SwipeMatch3.Gameplay
             Swap(downElement, upElement);
         }
 
+        /// <summary>
+        /// Свап спрайтов
+        /// </summary>
+        /// <param name="swapSignal"></param>
         public void SwapSprites(GameSignals.SwapSignal swapSignal)
         {
             ITileMovable first = swapSignal.FirstSwapElement;
@@ -63,6 +71,12 @@ namespace SwipeMatch3.Gameplay
             second.SetNewSetting(firstSetting);
         }
 
+        /// <summary>
+        /// Корректный ли свап (свап может быть только с видимым и невидимым; только для соседних тайлов)
+        /// </summary>
+        /// <param name="first"></param>
+        /// <param name="second"></param>
+        /// <returns></returns>
         private bool IsCorrectSwap(ITileMovable first, ITileMovable second)
         {
             // нельзя сдвинуть объекты, если первый из них - невидимый

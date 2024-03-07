@@ -64,18 +64,22 @@ namespace SwipeMatch3.Gameplay
                 Swap(_currentTileUnderInput, tileOnTouchUp);
                 _currentTileUnderInput = null;
             }
-
-            if (Input.touchCount > 0 && Input.GetTouch(0).phase == TouchPhase.Ended)
-            {
-
-            }
         }
 
+        /// <summary>
+        /// Отправка сигнала на свап двух тайлов
+        /// </summary>
+        /// <param name="first"></param>
+        /// <param name="second"></param>
         private void Swap(ITileMovable first, ITileMovable second)
         {
             SignalBus.Fire(new GameSignals.SwapSignal(first, second));
         }
 
+        /// <summary>
+        /// Получение тайла под нажатием (курсором для редактора)
+        /// </summary>
+        /// <returns></returns>
         private ITileMovable GetTileUnderTouch()
         {
             _pointerEvent.position = Input.mousePosition;
